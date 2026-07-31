@@ -88,6 +88,8 @@ describe("guarda de unicidad de los locators estables", () => {
     );
 
     expect(kinds).not.toContain("automationId");
+    // Control positivo: sin esto, un `kinds` vacío (helper roto) aprobaría el test.
+    expect(kinds).toContain("css");
   });
 
   it("NO emite un atributo name compartido — el caso normal de los radio buttons", async () => {
@@ -98,5 +100,6 @@ describe("guarda de unicidad de los locators estables", () => {
     );
 
     expect(kinds).not.toContain("attrName");
+    expect(kinds).toContain("css");
   });
 });

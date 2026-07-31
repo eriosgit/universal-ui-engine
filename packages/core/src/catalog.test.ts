@@ -339,6 +339,166 @@ describe("colapso de repeticiones (una tabla no debe escupir 20 filas idénticas
   });
 });
 
+/** Hallazgos de la revisión adversarial. Cada uno fue un defecto real, reproducido. */
+describe("regresiones de la revisión adversarial", () => {
+  it("NO colapsa ids de negocio: `qty_{n}` sería mentira y borraría los otros dos", () => {
+    // Tres "Cantidad" con ids reales de una app: qty_1 no existe en la página, y colapsar
+    // hacía desaparecer qty_99871 y qty_40016 del catálogo — del Markdown Y del JSON.
+    const arbol = nodo({
+      uid: "1",
+      role: "form" as Role,
+      children: ["10432", "99871", "40016"].map((id) =>
+        nodo({
+          uid: `q${id}`,
+          role: "spinbutton" as Role,
+          name: "Cantidad",
+          automationId: `qty_${id}`,
+          locators: [{ kind: "automationId", value: `qty_${id}`, confidence: 0.9 }],
+        }),
+      ),
+    });
+
+    const campos = buildCatalog(arbol, OPCIONES).groups[0]!.fields;
+
+    expect(campos).toHaveLength(3);
+    expect(campos.map((c) => c.automationId)).toEqual(["qty_10432", "qty_99871", "qty_40016"]);
+  });
+
+  it("sí colapsa un índice de verdad (1..N contiguo)", () => {
+    const arbol = nodo({
+      uid: "1",
+      role: "table" as Role,
+      children: [1, 2, 3, 4].map((i) =>
+        nodo({
+          uid: `b${i}`,
+          role: "button" as Role,
+          name: "Editar",
+          locators: [{ kind: "css", value: `tr:nth-child(${i}) > button`, confidence: 0.6 }],
+        }),
+      ),
+    });
+
+    const acciones = buildCatalog(arbol, OPCIONES).groups[0]!.actions;
+    expect(acciones).toHaveLength(1);
+    expect(acciones[0]?.patternSelector).toBe("tr:nth-child({n}) > button");
+  });
+
+  it("NO colapsa si las repeticiones se localizan de formas distintas", () => {
+    // El patrón se etiquetaba con el kind del primero: afirmaba que existe
+    // [data-testid=ver-2] cuando en realidad es [name=ver-2].
+    const arbol = nodo({
+      uid: "1",
+      role: "form" as Role,
+      children: [
+        nodo({
+          uid: "2",
+          role: "button" as Role,
+          name: "Ver",
+          locators: [{ kind: "testId", value: "ver-1", confidence: 0.95 }],
+        }),
+        nodo({
+          uid: "3",
+          role: "button" as Role,
+          name: "Ver",
+          locators: [{ kind: "attrName", value: "ver-2", confidence: 0.85 }],
+        }),
+      ],
+    });
+
+    expect(buildCatalog(arbol, OPCIONES).groups[0]!.actions).toHaveLength(2);
+  });
+
+  it("no funde dos contenedores distintos que comparten nombre", () => {
+    const dialogo = (uid: string, campo: string): UINode =>
+      nodo({
+        uid,
+        role: "dialog" as Role,
+        name: "Confirmar",
+        children: [nodo({ uid: `${uid}-a`, role: "textbox" as Role, name: campo })],
+      });
+    const arbol = nodo({
+      uid: "0",
+      role: "main" as Role,
+      children: [dialogo("1", "Motivo"), dialogo("2", "Comentario")],
+    });
+
+    const grupos = buildCatalog(arbol, OPCIONES).groups;
+    expect(grupos).toHaveLength(2);
+    expect(grupos.map((g) => g.fields.map((f) => f.name))).toEqual([["Motivo"], ["Comentario"]]);
+  });
+
+  it("cataloga switch, treeitem y option, y agrupa por grid", () => {
+    const arbol = nodo({
+      uid: "1",
+      role: "grid" as Role,
+      name: "Datos",
+      children: [
+        nodo({ uid: "2", role: "switch" as Role, name: "Notificaciones", supports: ["toggle"] }),
+        nodo({ uid: "3", role: "treeitem" as Role, name: "Bandeja", supports: ["invoke"] }),
+        nodo({ uid: "4", role: "option" as Role, name: "Mensual", supports: ["select"] }),
+      ],
+    });
+
+    const [grupo] = buildCatalog(arbol, OPCIONES).groups;
+
+    expect(grupo?.role).toBe("grid");
+    expect(grupo?.fields.map((f) => f.name)).toEqual(["Notificaciones"]);
+    expect(grupo?.actions.map((a) => a.name)).toEqual(["Bandeja", "Mensual"]);
+  });
+
+  it("cuenta —y avisa de— los interactivos que no supo clasificar", () => {
+    // Descartar en silencio le hace creer al desarrollador que vio toda la pantalla.
+    const arbol = nodo({
+      uid: "1",
+      role: "form" as Role,
+      name: "Alta",
+      children: [
+        nodo({ uid: "2", role: "textbox" as Role, name: "Correo" }),
+        nodo({ uid: "3", role: "generic" as Role, name: "Raro", supports: ["invoke"] }),
+      ],
+    });
+
+    const catalogo = buildCatalog(arbol, OPCIONES);
+
+    expect(catalogo.interactiveSkipped).toBe(1);
+    expect(catalogo.interactiveSkippedByRole).toEqual({ generic: 1 });
+    // El aviso dice QUÉ rol se saltó: un conteo a secas no distingue un hueco de la
+    // herramienta de un `generic`, que es esperado.
+    expect(renderCatalogMarkdown(catalogo)).toContain("generic: 1");
+  });
+
+  it("el Markdown muestra deshabilitado/solo lectura y el texto de ayuda", () => {
+    // Un campo deshabilitado salía idéntico a uno normal: el dev pega el selector, llama
+    // a fill() y se come un timeout que el catálogo podía haberle ahorrado.
+    const arbol = nodo({
+      uid: "1",
+      role: "form" as Role,
+      name: "Alta",
+      children: [
+        nodo({
+          uid: "2",
+          role: "textbox" as Role,
+          name: "NIT",
+          states: new Set<State>(["visible"]),
+          description: "Sin puntos ni guiones",
+        }),
+        nodo({
+          uid: "3",
+          role: "textbox" as Role,
+          name: "Referencia",
+          states: new Set<State>(["enabled", "visible", "readonly"]),
+        }),
+      ],
+    });
+
+    const md = renderCatalogMarkdown(buildCatalog(arbol, OPCIONES));
+
+    expect(md).toContain("deshabilitado");
+    expect(md).toContain("solo lectura");
+    expect(md).toContain("Sin puntos ni guiones");
+  });
+});
+
 describe("renderCatalogMarkdown", () => {
   it("marca la fila colapsada con ×N y muestra el patrón, no el selector de la fila 1", () => {
     const arbol = nodo({

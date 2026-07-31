@@ -49,7 +49,7 @@ describe("bundle de uui-scan", () => {
       { maxBuffer: 10 * 1024 * 1024 },
     );
 
-    expect(stdout).toContain("| Campo | id | name | tipo | req | selector |");
+    expect(stdout).toContain("| Campo | id | name | tipo | req | estado | selector |");
     expect(stdout).toContain("| Usuario | username | username | textbox |");
     expect(stdout).toContain("`login-username` (testId)");
     // Las coordenadas nunca deben llegar a un catálogo.
@@ -75,6 +75,32 @@ describe("bundle de uui-scan", () => {
     const md = await readFile(resolve(SALIDA, "login.md"), "utf8");
     expect(md).toContain("# Escaneo de UI");
   }, 120_000);
+
+  it("una URL que no carga falla rápido, con exit≠0 y sin dejar el navegador abierto", async () => {
+    // Antes: el `try/finally` se instalaba DESPUÉS de `WebBackend.launch`, que ya había
+    // abierto el navegador y hacía el `goto` dentro. Si el goto rechazaba, nadie cerraba
+    // nada: el proceso no podía terminar y quedaban procesos de Chromium huérfanos.
+    const inicio = Date.now();
+    const fallo = await ejecutar(
+      process.execPath,
+      [CLI, "scan", "http://127.0.0.1:59999/no-existe", "--clean"],
+      { maxBuffer: 10 * 1024 * 1024 },
+    ).then(
+      () => null,
+      (error: { code?: number }) => error,
+    );
+
+    expect(fallo).not.toBeNull();
+    expect(fallo?.code).not.toBe(0);
+    // Sin el fix esto se iba a 45s+ y el proceso no terminaba solo.
+    expect(Date.now() - inicio).toBeLessThan(30_000);
+  }, 120_000);
+
+  it("responde a --version con la versión del paquete", async () => {
+    const { stdout } = await ejecutar(process.execPath, [CLI, "--version"]);
+    const { version } = JSON.parse(await readFile(resolve(RAIZ, "package.json"), "utf8"));
+    expect(stdout.trim()).toBe(version);
+  }, 30_000);
 
   it("colapsa la tabla de 20 filas en una sola entrada parametrizada", async () => {
     const { stdout } = await ejecutar(

@@ -57,4 +57,35 @@ describe("Presupuesto de tokens (§3)", () => {
     }
     expect(snapshot.tokenEstimate).toBeGreaterThan(0);
   });
+
+  /**
+   * El gate de arriba no vio una regresión real: al añadir tres campos al modelo
+   * (ADR-0006), TODOS los snapshots crecieron un 27-29% — y el test siguió verde, porque
+   * solo mide un snapshot filtrado por `form`, donde el coste es pequeño. Un techo
+   * absoluto sobre el volcado sin acotar sí lo habría detectado.
+   *
+   * No es un número mágico: es el valor medido tras corregirlo (3852) más un margen del
+   * 10%. Si sube por encima, o hay una regresión o hay un cambio deliberado que toca
+   * volver a medir y actualizar aquí — con la medición, no a ojo.
+   */
+  it("ningún campo nuevo del modelo puede inflar en silencio TODOS los snapshots", async () => {
+    const session = new Session(WebBackend.fromPage(page));
+    const compact = await session.snapshot({ mode: "compact" });
+    const actionable = await session.snapshot({ mode: "actionable" });
+
+    expect(compact.tokenEstimate).toBeLessThan(4250);
+    expect(actionable.tokenEstimate).toBeLessThan(1750);
+  });
+
+  it("los campos de ADR-0006 no se serializan cuando son null", async () => {
+    // `description` y `options` son null en el 100% de los nodos de este fixture; pagar
+    // `"description":null` en cada uno era el grueso de aquel +29%.
+    const session = new Session(WebBackend.fromPage(page));
+    const snapshot = await session.snapshot({ mode: "compact" });
+    const json = JSON.stringify(snapshot);
+
+    expect(json).not.toContain('"description":null');
+    expect(json).not.toContain('"options":null');
+    expect(json).not.toContain('"automationId":null');
+  });
 });

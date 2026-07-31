@@ -110,7 +110,9 @@ npx uui-scan …          # sin instalar nada
 npm i -g uui-scan       # o global
 ```
 
-Requiere Node 20+. La primera ejecución descarga Chromium vía Playwright.
+Requiere Node 20+. Playwright descarga Chromium en su **postinstall**, no en la primera
+ejecución. Si tu entorno instala con los scripts deshabilitados —algunos hosts de MCP lo
+hacen— verás `Executable doesn't exist`; se arregla con `npx playwright install chromium`.
 
 ## Estado
 

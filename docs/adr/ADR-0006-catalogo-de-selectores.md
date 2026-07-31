@@ -59,8 +59,8 @@ tengan equivalente simplemente no lo emiten, como ya pasa con `sapId`.
 
 **3. El catálogo recomienda un selector, y muestra los respaldos.**
 
-Se ordena por la confianza que ya existe en el modelo (`testId` 0.95 → `attrName` →
-`automationId` → `role+name` 0.8 → `css` 0.6 → `xpath` 0.55). `coords` (0.05) **nunca**
+Se ordena por la confianza que ya existe en el modelo: `testId` 0.95 → `automationId`
+0.9 → `attrName` 0.85 → `role+name` 0.8 → `css` 0.6 → `xpath` 0.55. `coords` (0.05) **nunca**
 entra al catálogo: un selector por coordenadas no le sirve a nadie pegado en un proyecto.
 
 **4. Dos formatos, una fuente.** JSON para consumir por máquina y Markdown para leer y
@@ -81,7 +81,21 @@ herramienta a un humano; el JSON, el que la hace útil a un agente.
   explícitamente que no puede.
 - Los golden trees **no** cambian: `normalizeShape` compara roles, nombres y jerarquía, y
   ninguno de los campos nuevos entra ahí. Se esperaba tener que refrescarlos y no hizo
-  falta — verificado, no asumido. El presupuesto de tokens tampoco se movió.
+  falta — verificado, no asumido.
+
+- **Corrección.** Este ADR afirmó primero que "el presupuesto de tokens tampoco se movió",
+  y era FALSO. Una revisión adversarial lo midió: serializar los tres campos en cada nodo
+  costaba **+27,0 % en `actionable`** (1937 vs 1525) y **+28,9 % en `compact`** (4869 vs
+  3778) sobre `fixtures/web-app`, con `description` y `options` a `null` en el **100 %** de
+  los nodos. El gate de §3 no lo detectó porque solo mide un snapshot filtrado por `form`.
+
+  La afirmación se apoyaba en que la suite seguía verde, que no es lo mismo que medir. El
+  fallo de método importa más que el número: se dijo "verificado, no asumido" sobre algo
+  asumido. Corregido en `stripInternalFields` — los tres campos se omiten cuando son
+  `null`, igual que `value`; el consumidor que los necesita es el catálogo, que no pasa
+  por el serializador. Medido después: **1585** en `actionable` y **3852** en `compact`.
+  El residuo sobre la línea base (+3,9 % y +2,0 %) son los `automationId` que sí existen,
+  y esos se pagan a gusto: son información real, no `null` repetidos.
 
 - **El escaneo espera a que la pantalla se asiente, y no es opcional por defecto.**
   Descubierto probando contra una app real, no en el diseño: tres escaneos seguidos de la

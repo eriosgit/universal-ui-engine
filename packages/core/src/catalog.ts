@@ -29,6 +29,14 @@ const ROLES_CONTENEDOR: ReadonlySet<Role> = new Set([
   "navigation",
   "article",
   "table",
+  // `grid` es lo que usan las tablas de datos reales (AG-Grid, PrimeReact DataTable).
+  // Sin él, sus botones caían en el grupo del ancestro, mezclados con lo demás.
+  "grid",
+  "toolbar",
+  "tablist",
+  "complementary",
+  "banner",
+  "contentinfo",
 ] as Role[]);
 
 /** Roles que son un CAMPO (el usuario introduce o elige algo). */
@@ -41,10 +49,20 @@ const ROLES_CAMPO: ReadonlySet<Role> = new Set([
   "radio",
   "slider",
   "spinbutton",
+  // `switch` es el toggle estándar de cualquier UI moderna y el motor le da el verbo
+  // `toggle`; omitirlo dejaba fuera un control que el usuario SÍ tiene que rellenar.
+  "switch",
 ] as Role[]);
 
 /** Roles sobre los que se ACTÚA (disparan algo). */
-const ROLES_ACCION: ReadonlySet<Role> = new Set(["button", "link", "tab", "menuitem"] as Role[]);
+const ROLES_ACCION: ReadonlySet<Role> = new Set([
+  "button",
+  "link",
+  "tab",
+  "menuitem",
+  "option",
+  "treeitem",
+] as Role[]);
 
 export type CatalogSelector = {
   kind: Locator["kind"];
@@ -103,6 +121,16 @@ export type Catalog = {
   groups: CatalogGroup[];
   /** Cuántos nodos se examinaron, para saber si el escaneo fue parcial. */
   nodesScanned: number;
+  /**
+   * Nodos que declaraban soportar algún verbo pero cuyo rol no entra en ninguna de las
+   * tres listas de arriba. Se cuenta y se muestra a propósito: un catálogo que descarta
+   * en silencio le hace creer al desarrollador que ha visto toda la pantalla. Si este
+   * número no es 0, falta un rol por clasificar.
+   */
+  interactiveSkipped: number;
+  /** Qué roles fueron, y cuántos de cada uno: un conteo a secas no dice si falta
+   * clasificar un rol nuevo o si son `generic` (controles sin rol canónico, esperados). */
+  interactiveSkippedByRole: Record<string, number>;
 };
 
 /**
@@ -177,8 +205,17 @@ function patronDe(valores: string[]): string | null {
 
   const medios = valores.map((valor) => valor.slice(pre, valor.length - suf));
   if (medios.some((medio) => !/^\d+$/.test(medio))) return null;
-  // Si todas las repeticiones traen el MISMO número no hay nada que parametrizar.
-  if (new Set(medios).size === 1) return null;
+
+  // Que sean números NO basta: tienen que ser un ÍNDICE. Con ids de negocio
+  // (`qty_10432`, `qty_99871`, `qty_40016`) el prefijo común también produce un patrón
+  // —`qty_{n}`— y sería MENTIRA: `qty_1` no existe en la página, y los otros dos ids
+  // desaparecerían del catálogo. Se exige que formen un rango contiguo sin repeticiones,
+  // que es lo que produce una lista o una tabla renderizada por índice.
+  const numeros = medios.map(Number);
+  if (new Set(numeros).size !== numeros.length) return null;
+  const ordenados = [...numeros].sort((a, b) => a - b);
+  const contiguos = ordenados.every((n, i) => i === 0 || n === ordenados[i - 1]! + 1);
+  if (!contiguos) return null;
 
   return `${primero.slice(0, pre)}{n}${suf > 0 ? primero.slice(primero.length - suf) : ""}`;
 }
@@ -211,6 +248,13 @@ function colapsarRepetidas(entradas: CatalogEntry[]): CatalogEntry[] {
     // contra una app real: 24 links distintos de un menú lateral, ninguno con nombre
     // accesible, se fundían en una sola fila "— ×24". Eso no resume: oculta.
     if (primera.name === null) continue;
+
+    // Todas las repeticiones deben localizarse del MISMO modo. Si la primera trae un
+    // `testId` y la segunda un `attrName`, el patrón se etiquetaría con el kind del
+    // primero y afirmaría que existe un `[data-testid=ver-2]` que en realidad es un
+    // `[name=ver-2]`. `patronDe` solo ve strings, así que no puede detectarlo.
+    const kinds = new Set(grupo.map((entrada) => entrada.selector?.kind));
+    if (kinds.size !== 1 || kinds.has(undefined)) continue;
 
     const valores = grupo
       .map((entrada) => entrada.selector?.value)
@@ -256,10 +300,15 @@ export function buildCatalog(
 ): Catalog {
   const groups = new Map<string, CatalogGroup>();
   let nodesScanned = 0;
+  let interactiveSkipped = 0;
+  const interactiveSkippedByRole: Record<string, number> = {};
 
-  // Clave estable por contenedor: dos formularios sin nombre no deben fundirse en uno.
+  // Clave estable por contenedor: el índice va SIEMPRE, tenga nombre o no. Con el nombre
+  // como clave, dos `role="dialog" aria-label="Confirmar"` distintos se fundían en un
+  // solo grupo con los campos de ambos entremezclados — el mismo defecto que esta clave
+  // pretendía evitar, solo que en la rama de los que SÍ tienen nombre.
   const claveDe = (contenedor: UINode | null, indice: number): string =>
-    contenedor ? `${contenedor.role}:${contenedor.name ?? `#${indice}`}` : "";
+    contenedor ? `${contenedor.role}:#${indice}:${contenedor.name ?? ""}` : "";
 
   function grupoDe(contenedor: UINode | null, indice: number): CatalogGroup {
     const clave = claveDe(contenedor, indice);
@@ -289,6 +338,11 @@ export function buildCatalog(
       grupoDe(siguienteContenedor, siguienteIndice).fields.push(entryFor(node));
     } else if (ROLES_ACCION.has(node.role)) {
       grupoDe(siguienteContenedor, siguienteIndice).actions.push(entryFor(node));
+    } else if (node.supports.length > 0 && !esContenedor) {
+      // Interactivo pero sin clasificar. Se cuenta en vez de desaparecer: si este número
+      // no es 0, hay un rol que el catálogo no sabe encajar y el usuario debe saberlo.
+      interactiveSkipped += 1;
+      interactiveSkippedByRole[node.role] = (interactiveSkippedByRole[node.role] ?? 0) + 1;
     }
 
     for (const child of node.children) walk(child, siguienteContenedor, siguienteIndice);
@@ -309,6 +363,8 @@ export function buildCatalog(
         actions: colapsarRepetidas(grupo.actions),
       })),
     nodesScanned,
+    interactiveSkipped,
+    interactiveSkippedByRole,
   };
 }
 
@@ -336,6 +392,18 @@ function nombreTexto(entry: CatalogEntry): string {
 }
 
 /**
+ * Estado del control. Sin esto, un campo deshabilitado salía IDÉNTICO a uno normal en el
+ * Markdown: el desarrollador pega el selector, llama a `fill()` y se come un timeout que
+ * el catálogo podría haberle ahorrado. `required` tiene columna propia; el resto va aquí.
+ */
+function estadoTexto(entry: CatalogEntry): string {
+  const marcas: string[] = [];
+  if (entry.disabled) marcas.push("deshabilitado");
+  if (entry.readonly) marcas.push("solo lectura");
+  return marcas.length > 0 ? marcas.join(", ") : "—";
+}
+
+/**
  * Markdown para leer y pegar en un PR. Es el formato que hace útil la herramienta a un
  * humano; el JSON es el que la hace útil a un agente. Misma fuente, ADR-0006.
  */
@@ -346,6 +414,18 @@ export function renderCatalogMarkdown(catalog: Catalog): string {
     `**Objetivo:** ${catalog.target}`,
     `**Escaneado:** ${catalog.scannedAt}`,
     `**Nodos examinados:** ${catalog.nodesScanned}`,
+    ...(catalog.interactiveSkipped > 0
+      ? [
+          "",
+          `⚠️ **${catalog.interactiveSkipped} elementos interactivos quedaron fuera** ` +
+            `(${Object.entries(catalog.interactiveSkippedByRole)
+              .map(([role, n]) => `${role}: ${n}`)
+              .join(", ")}). ` +
+            "Los `generic` son esperados: controles reales que la app no expone con un rol " +
+            "estándar, así que no hay forma fiable de nombrarlos. Cualquier OTRO rol aquí " +
+            "es un hueco de la herramienta y conviene reportarlo.",
+        ]
+      : []),
     "",
     "> Los selectores caducan cuando la app se rediseña. Este documento tiene fecha por eso.",
     "",
@@ -362,15 +442,25 @@ export function renderCatalogMarkdown(catalog: Catalog): string {
 
     if (grupo.fields.length > 0) {
       lineas.push("### Campos", "");
-      lineas.push("| Campo | id | name | tipo | req | selector |");
-      lineas.push("|---|---|---|---|:--:|---|");
+      lineas.push("| Campo | id | name | tipo | req | estado | selector |");
+      lineas.push("|---|---|---|---|:--:|---|---|");
       for (const field of grupo.fields) {
         lineas.push(
           `| ${nombreTexto(field)} | ${celda(field.automationId)} | ${celda(field.attrName)} ` +
-            `| ${field.nativeRole} | ${field.required ? "sí" : "no"} | ${selectorTexto(field)} |`,
+            `| ${field.nativeRole} | ${field.required ? "sí" : "no"} | ${estadoTexto(field)} ` +
+            `| ${selectorTexto(field)} |`,
         );
       }
       lineas.push("");
+
+      // `description` (placeholder / aria-describedby) es un campo de ADR-0006 que no
+      // cabía en la tabla sin volverla ilegible, pero tirarlo haría que el Markdown y el
+      // JSON dejaran de ser "dos formatos, una fuente".
+      const conAyuda = grupo.fields.filter((f) => f.description);
+      for (const field of conAyuda) {
+        lineas.push(`- **${field.name ?? "(sin nombre)"}** — ayuda: _${celda(field.description)}_`);
+      }
+      if (conAyuda.length > 0) lineas.push("");
 
       const conOpciones = grupo.fields.filter((f) => f.options && f.options.length > 0);
       for (const field of conOpciones) {

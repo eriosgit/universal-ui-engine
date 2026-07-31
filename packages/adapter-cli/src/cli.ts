@@ -65,12 +65,16 @@ async function withSession<T>(
   fn: (session: Session) => Promise<T>,
 ): Promise<T> {
   if (opts.clean) {
-    const backend = await WebBackend.launch(target, { headless: !opts.headed });
-    const session = new Session(backend);
+    // `WebBackend.launch` abre el navegador Y navega. Si el `goto` rechaza (URL caída,
+    // DNS, SSL) con el `try` puesto DESPUÉS del await, el finally nunca se instala: el
+    // navegador queda huérfano y el proceso no puede terminar. Reproducido contra un
+    // puerto cerrado: 45s sin salir y tres `chrome-headless-shell` vivos.
+    let backend: Awaited<ReturnType<typeof WebBackend.launch>> | undefined;
     try {
-      return await fn(session);
+      backend = await WebBackend.launch(target, { headless: !opts.headed });
+      return await fn(new Session(backend));
     } finally {
-      await session.dispose();
+      await backend?.dispose();
     }
   }
 
@@ -87,9 +91,14 @@ async function withSession<T>(
   }
 }
 
+/** Lo inyecta esbuild al empaquetar `uui-scan`; en desarrollo, 0.0.0. */
+declare const __UUI_VERSION__: string | undefined;
+
 const program = new Command();
 program
   .name("uui-scan")
+  // Inyectada por esbuild al empaquetar (ver packages/uui-scan/build.mjs).
+  .version(typeof __UUI_VERSION__ === "string" ? __UUI_VERSION__ : "0.0.0")
   .description(
     "Escanea una pantalla y devuelve el catálogo de selectores. " +
       "`uui-scan scan <url>` es el comando principal; el resto son utilidades del motor.",

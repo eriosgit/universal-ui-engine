@@ -113,11 +113,22 @@ export class WebBackend implements Backend {
 
   /** Conveniencia para CLI/MCP/demo: abre un Chromium propio y navega a `url`. Quien
    * llama es responsable de `dispose()` — cierra el browser que este método abrió. */
+  /**
+   * El `goto` va dentro de un try/finally propio: si la URL no carga (puerto cerrado,
+   * DNS, SSL, timeout), el navegador YA está abierto y quien llamó no tiene todavía un
+   * backend que cerrar. Sin esto, el proceso quedaba colgado con Chromium huérfano
+   * — reproducido contra un puerto cerrado: 45s sin salir y tres procesos vivos.
+   */
   static async launch(url: string, options: { headless?: boolean } = {}): Promise<WebBackend> {
     const browser = await chromium.launch({ headless: options.headless ?? true });
-    const page = await browser.newPage();
-    await page.goto(url);
-    return new WebBackend(page, browser);
+    try {
+      const page = await browser.newPage();
+      await page.goto(url);
+      return new WebBackend(page, browser);
+    } catch (error) {
+      await browser.close();
+      throw error;
+    }
   }
 
   /** Para consumidores que ya administran su propia página de Playwright (p. ej. la
