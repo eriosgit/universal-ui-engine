@@ -55,6 +55,25 @@ async function kindsDe(html: string, nombre: string): Promise<string[]> {
   return [entrada.selector, ...entrada.fallbacks].filter(Boolean).map((s) => s!.kind);
 }
 
+describe("marca de automatización del navegador", () => {
+  it("no enciende navigator.webdriver: hay una persona escribiendo su contraseña", async () => {
+    // Un login manual con `uui-scan login` lo hace un humano, pero Chromium se anuncia
+    // como automatizado por el mero hecho de arrancar desde código, y algunos proveedores
+    // de identidad rechazan la ventana por eso.
+    //
+    // Medido: quitar `--enable-automation` NO basta (webdriver sigue en true); lo que lo
+    // apaga es `--disable-blink-features=AutomationControlled`. Si alguien toca los args
+    // de `openPersistentContext`, este test lo cuenta.
+    const backend = await WebBackend.launch("about:blank", { headless: true });
+    try {
+      const pagina = (backend as unknown as { page: Page }).page;
+      expect(await pagina.evaluate(() => navigator.webdriver)).toBe(false);
+    } finally {
+      await backend.dispose();
+    }
+  }, 60_000);
+});
+
 describe("guarda de unicidad de los locators estables", () => {
   it("emite testId/id/name cuando son únicos", async () => {
     const kinds = await kindsDe(
