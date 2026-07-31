@@ -77,15 +77,18 @@ pnpm build
 ### CLI (`uui`)
 
 ```bash
-# Snapshot compacto de una página, filtrado por rol
-node packages/adapter-cli/dist/src/cli.js snapshot "https://ejemplo.com" --filter-role form
+# Escanear una página: snapshot compacto de su árbol de UI
+pnpm uui snapshot "https://ejemplo.com"
+
+# Lo mismo, acotado por rol (menos ruido, menos tokens)
+pnpm uui snapshot "https://ejemplo.com" --filter-role form
 
 # Buscar un control por nombre accesible
-node packages/adapter-cli/dist/src/cli.js find "https://ejemplo.com" "Guardar" --role button
+pnpm uui find "https://ejemplo.com" "Guardar" --role button
 
 # Actuar: escribir en un campo, hacer clic — sin selectores
-node packages/adapter-cli/dist/src/cli.js act "https://ejemplo.com" setValue --find "Usuario" --value "dev2"
-node packages/adapter-cli/dist/src/cli.js act "https://ejemplo.com" invoke --find "Entrar" --role button
+pnpm uui act "https://ejemplo.com" setValue --find "Usuario" --value "dev2"
+pnpm uui act "https://ejemplo.com" invoke --find "Entrar" --role button
 ```
 
 Flags útiles: `--mode full`, `--depth N`, `--filter-name texto`, `--headed` (navegador
@@ -104,6 +107,12 @@ Para conectarlo a un agente (Claude Code, o cualquier cliente MCP por stdio):
     }
   }
 }
+```
+
+Con Claude Code, el registro es un comando (ajusta la ruta al clon):
+
+```bash
+claude mcp add uui -- node "<ruta-al-repo>/packages/adapter-mcp/dist/src/server.js"
 ```
 
 Expone exactamente tres herramientas — `ui.snapshot`, `ui.find`, `ui.act` — cada una con
