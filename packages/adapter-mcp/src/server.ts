@@ -3,26 +3,40 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { ROLES, Session, type Predicate } from "@uui/core";
-import { WebBackend } from "@uui/backend-web";
+import {
+  WebBackend,
+  defaultProfileDir,
+  openPersistentContext,
+  type BrowserContext,
+} from "@uui/backend-web";
 
 /**
  * Servidor MCP (stdio) — Parte C6 del plan de ejecución. EXACTAMENTE tres herramientas:
  * `ui.snapshot`, `ui.find`, `ui.act`. Traducción fina sobre `@uui/core` — cero lógica de
  * dominio propia (eso vive en `Session`/`resolver`/`serialize`, ya probado en `core`).
  *
- * Una `Session` por `target` (URL), reutilizada entre llamadas dentro del proceso: así un
- * `uid` devuelto por `ui.snapshot`/`ui.find` sigue siendo válido para un `ui.act`
- * posterior en la MISMA conversación del agente — el `uid` es opaco DE SESIÓN (D1), no
- * de proceso, pero mientras el `target` no cambie es la misma sesión de facto.
+ * Sesiones de navegador: TODO corre sobre el perfil persistente (~/.uui/profile, o
+ * UUI_PROFILE_DIR) — si el usuario ya inició sesión en una app (vía `uui login`), el
+ * agente ve SU dashboard, no la página de login que vería un navegador limpio. Un solo
+ * contexto de navegador compartido (el perfil solo admite un proceso a la vez) con una
+ * página + `Session` por `target`: así un `uid` devuelto por `ui.snapshot`/`ui.find`
+ * sigue siendo válido para un `ui.act` posterior en la misma conversación (D1).
  */
 
 const sessions = new Map<string, Session>();
+let sharedContext: BrowserContext | null = null;
 
 async function getSession(target: string): Promise<Session> {
   const existing = sessions.get(target);
   if (existing) return existing;
-  const backend = await WebBackend.launch(target, { headless: true });
-  const session = new Session(backend);
+  if (!sharedContext) {
+    sharedContext = await openPersistentContext(defaultProfileDir(), { headless: true });
+  }
+  const page = await sharedContext.newPage();
+  await page.goto(target);
+  // fromPage: dispose() de esta Session NO cierra el contexto compartido — las páginas
+  // de otros targets siguen vivas. El contexto muere con el proceso del servidor.
+  const session = new Session(WebBackend.fromPage(page));
   sessions.set(target, session);
   return session;
 }

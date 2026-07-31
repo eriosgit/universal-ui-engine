@@ -112,6 +112,29 @@ que tú toques la terminal. Si el agente no las elige por su cuenta, basta con d
 solo esas tres herramientas) vive como prueba E2E en
 `packages/adapter-mcp/test/demo-login.e2e.test.ts`.
 
+### Páginas con sesión iniciada (tu dashboard, no un login)
+
+El motor no usa tu Chrome: abre su propio navegador. Sin más, una app donde TÚ ya
+estás logueado (`https://app.alegra.com`…) para el motor sería solo una página de
+login. La solución es el **perfil persistente** (`~/.uui/profile`): inicias sesión una
+vez, a mano, y desde entonces todo — CLI y agente — ve TU sesión:
+
+```bash
+pnpm uui login "https://app.alegra.com"
+# → se abre un navegador visible; inicias sesión como siempre y CIERRAS el navegador.
+
+pnpm uui snapshot "https://app.alegra.com"
+# → ahora el snapshot es tu dashboard, no el login. Y el agente (MCP) también lo ve así.
+```
+
+Las sesiones sobreviven reinicios (son cookies reales en un perfil real de Chromium) y
+expiran cuando la app las expire, como en cualquier navegador. `--clean` fuerza un
+navegador sin estado; `--profile <dir>` (o `UUI_PROFILE_DIR` para el MCP) usa un perfil
+alterno — p. ej. uno por cliente. Advertencia: el perfil admite un solo proceso a la
+vez — cierra el navegador de `login` antes de escanear. Nota: algunos proveedores de
+SSO (p. ej. "Iniciar sesión con Google") pueden rechazar navegadores automatizados;
+si la app lo permite, usa su login de usuario/contraseña propio.
+
 ### CLI (`uui`) — para desarrollar y depurar el motor
 
 La CLI existe para quien trabaja EN el motor (o quiere ver crudo lo que el agente ve),
