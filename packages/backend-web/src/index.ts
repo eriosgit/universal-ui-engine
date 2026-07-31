@@ -60,6 +60,27 @@ export function defaultProfileDir(): string {
  * si el navegador de `uui login` sigue abierto, un segundo proceso sobre el mismo
  * perfil fallará — cerrar el primero antes.
  */
+/**
+ * Chromium enciende `navigator.webdriver` y se anuncia como automatizado SOLO porque lo
+ * lanza una herramienta. Eso hace que algunos proveedores de identidad (el "Iniciar
+ * sesión con Google" del `login` manual, sobre todo) rechacen la ventana — y ahí no hay
+ * ningún bot: hay una persona escribiendo su contraseña.
+ *
+ * MEDIDO, porque la intuición falla aquí:
+ * - quitar `--enable-automation` NO basta: `navigator.webdriver` sigue en `true`;
+ * - `--disable-blink-features=AutomationControlled` sí lo pone en `false`;
+ * - en headless el User-Agent SIGUE diciendo "Headless" haga lo que haga. Para un login
+ *   que discrimine por eso, la única salida es `--headed`.
+ *
+ * No confundir esto con hacer el navegador indetectable: sigue siendo Chromium bajo
+ * control de Playwright y hay una docena de señales más. Solo se apaga la que se enciende
+ * por el mero hecho de arrancarlo desde código.
+ */
+const SIN_MARCA_DE_AUTOMATIZACION = {
+  ignoreDefaultArgs: ["--enable-automation"],
+  args: ["--disable-blink-features=AutomationControlled"],
+} as const;
+
 export async function openPersistentContext(
   profileDir: string = defaultProfileDir(),
   options: { headless?: boolean } = {},
@@ -67,6 +88,8 @@ export async function openPersistentContext(
   const headless = options.headless ?? true;
   return chromium.launchPersistentContext(profileDir, {
     headless,
+    ignoreDefaultArgs: [...SIN_MARCA_DE_AUTOMATIZACION.ignoreDefaultArgs],
+    args: [...SIN_MARCA_DE_AUTOMATIZACION.args],
     // En headed (login manual) la ventana se comporta como un navegador normal, sin
     // viewport fijo emulado; en headless se mantiene el viewport por defecto.
     viewport: headless ? undefined : null,
@@ -120,7 +143,11 @@ export class WebBackend implements Backend {
    * — reproducido contra un puerto cerrado: 45s sin salir y tres procesos vivos.
    */
   static async launch(url: string, options: { headless?: boolean } = {}): Promise<WebBackend> {
-    const browser = await chromium.launch({ headless: options.headless ?? true });
+    const browser = await chromium.launch({
+      headless: options.headless ?? true,
+      ignoreDefaultArgs: [...SIN_MARCA_DE_AUTOMATIZACION.ignoreDefaultArgs],
+      args: [...SIN_MARCA_DE_AUTOMATIZACION.args],
+    });
     try {
       const page = await browser.newPage();
       await page.goto(url);

@@ -125,6 +125,16 @@ npx uui-scan scan https://tuapp.com/facturas
 Las sesiones sobreviven reinicios y expiran cuando la app las expire. El perfil admite **un
 solo proceso a la vez**: cierra el navegador de `login` antes de escanear.
 
+**El navegador no se anuncia como automatizado.** Chromium enciende `navigator.webdriver`
+por el mero hecho de arrancar desde código, y algunos proveedores de identidad rechazan la
+ventana por eso — cuando aquí hay una persona escribiendo su contraseña, no un bot.
+`uui-scan` lanza con `--disable-blink-features=AutomationControlled`, así que
+`navigator.webdriver` vale `false`.
+
+No es un modo indetectable: sigue siendo Chromium bajo control de Playwright y hay más
+señales. Y en **headless el User-Agent sigue diciendo "Headless"**, que ninguna bandera
+tapa; si un login discrimina por eso, usa `--headed`.
+
 **Qué se guarda y dónde.** Un perfil de Chromium normal en `~/.uui/profile` (en Windows,
 `C:\Users\<tú>\.uui\profile`) — las mismas cookies que tendría cualquier navegador. Nada
 sale de tu máquina. Para cerrar la sesión, borra ese directorio:
@@ -397,7 +407,7 @@ uui-scan codegen mi-flujo.flow.json --target playwright-ts --out automatizacion.
 | El escaneo devuelve la página de login | Guarda la sesión primero con `uui-scan login <url>` |
 | Cuelga o falla al abrir el navegador | El perfil admite un proceso a la vez: cierra el navegador de `login`, o usa `--clean` |
 | El catálogo sale más corto de lo esperado | La SPA no había terminado. Sube `--quiet-ms 1500` |
-| Login con Google/SSO que no deja entrar | Algunos proveedores rechazan navegadores automatizados. Usa el login propio de la app si lo tiene |
+| Login con Google/SSO que no deja entrar | El navegador ya no se anuncia como automatizado (`navigator.webdriver` = `false`). Si aun así te rechaza, usa `--headed`: en headless el User-Agent sigue diciendo "Headless" y eso no lo tapa ninguna bandera |
 | Salen muchísimas filas | Acota con `--filter-role form` o `--filter-name "<región>"` |
 
 ---
