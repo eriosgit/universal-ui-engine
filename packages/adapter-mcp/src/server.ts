@@ -37,7 +37,15 @@ async function getSession(target: string): Promise<Session> {
     sharedContext = await openPersistentContext(defaultProfileDir(), { headless: true });
   }
   const page = await sharedContext.newPage();
-  await page.goto(target);
+  try {
+    await page.goto(target);
+  } catch (error) {
+    // Sin esto, cada target que no carga (URL mal escrita por el agente, app caída) deja
+    // una pestaña abierta que nunca se cachea ni se cierra. En un servidor de larga vida
+    // son pestañas acumulándose hasta quedarse sin memoria.
+    await page.close();
+    throw error;
+  }
   // fromPage: dispose() de esta Session NO cierra el contexto compartido — las páginas
   // de otros targets siguen vivas. El contexto muere con el proceso del servidor.
   const session = new Session(WebBackend.fromPage(page));
@@ -61,7 +69,7 @@ server.registerTool(
       "Devuelve el árbol de UI de una región acotada (nunca el árbol completo — D2). " +
       "EMPIEZA SIEMPRE por mode:'actionable' (por defecto): es la respuesta a '¿qué puedo " +
       "hacer aquí?' y cuesta un orden de magnitud menos — medido contra un dashboard " +
-      "real, 224 tokens frente a 6.811 del árbol completo. Usa 'compact' solo si " +
+      "real, 517 tokens frente a 9.864 del árbol completo. Usa 'compact' solo si " +
       "necesitas leer contenido que no es accionable, y acótalo con root/maxDepth/filter. " +
       "Presupuesto objetivo <3.000 tokens (§3); el campo tokenEstimate de la respuesta " +
       "lo confirma en cada llamada.",

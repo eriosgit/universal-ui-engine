@@ -8,7 +8,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
 /**
  * Demo de salida de F0 (Parte C7 del plan de ejecución): un agente inicia sesión en
- * `fixtures/web-app` usando SOLO las 3 herramientas MCP — sin un selector escrito a
+ * `fixtures/web-app` usando SOLO snapshot/find/act (sin ui.scan) — sin un selector escrito a
  * mano. Este archivo ES la demo: en vez de (o además de) una grabación de pantalla —que
  * no aporta mucho sobre un Chromium headless manejado por un cliente MCP de línea de
  * comandos— es una prueba automatizada que reproduce exactamente esos pasos y falla si

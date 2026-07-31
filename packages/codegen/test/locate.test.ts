@@ -87,6 +87,33 @@ describe("xpathLabelVisual — equivale a la regla del motor", () => {
     expect(await page.locator(xpathLabelVisual("Cantidad")).count()).toBe(0);
   });
 
+  it("es MÁS permisivo que el motor en profundidad, y está documentado", async () => {
+    // El motor se para a 3 ancestros; XPath 1.0 no tiene forma razonable de acotar eso.
+    // Con el label a 5 ancestros el motor devuelve null y este selector sí encuentra el
+    // control. Se fija aquí para que la divergencia sea una decisión visible y no una
+    // sorpresa: el comentario de `xpathLabelVisual` explica por qué es aceptable.
+    await page.setContent(`
+      <div><label>Lejano</label>
+        <div><div><div><div><input id="hondo"></div></div></div></div>
+      </div>`);
+
+    expect(await page.locator(xpathLabelVisual("Lejano")).getAttribute("id")).toBe("hondo");
+
+    const nombreSegunElMotor = await page.evaluate(() => {
+      let ancestro = document.getElementById("hondo")?.parentElement ?? null;
+      for (let profundidad = 0; profundidad < 3 && ancestro; profundidad++) {
+        const labels = ancestro.querySelectorAll("label");
+        const controles = ancestro.querySelectorAll("input, textarea, select");
+        if (labels.length === 1 && controles.length === 1) {
+          return labels[0]?.textContent?.trim() ?? null;
+        }
+        ancestro = ancestro.parentElement;
+      }
+      return null;
+    });
+    expect(nombreSegunElMotor).toBeNull();
+  });
+
   it("escapa nombres con comillas sin producir un XPath inválido", async () => {
     await page.setContent(`<div><label>Talla "M"</label><input id="talla"></div>`);
     expect(await page.locator(xpathLabelVisual('Talla "M"')).getAttribute("id")).toBe("talla");

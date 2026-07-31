@@ -95,10 +95,20 @@ export function xpathLiteral(s: string): string {
 }
 
 /**
- * XPath que replica la regla de nombres del motor para labels visuales no vinculados.
- * El nombre se conoce en tiempo de GENERACIÓN, así que el XPath se emite ya calculado:
- * la regla vive una sola vez (aquí, testeable) en vez de duplicada dentro del texto que
- * se genera, y además queda a la vista en el script para quien lo revise en un PR.
+ * XPath para labels visuales no vinculados. El nombre se conoce en tiempo de GENERACIÓN,
+ * así que se emite ya calculado: la regla vive una sola vez (aquí, testeable) en vez de
+ * duplicada dentro del texto generado, y queda a la vista en el script para quien lo
+ * revise en un PR.
+ *
+ * Replica la guarda de UNICIDAD del motor (un label y un control en el contenedor), pero
+ * NO su límite de 3 ancestros: XPath 1.0 no tiene forma razonable de acotar la
+ * profundidad, así que este selector es más permisivo. Medido: con el label a 5
+ * ancestros el motor devuelve `null` y este XPath sí encuentra el control.
+ *
+ * Es aceptable porque el respaldo solo se USA cuando `getByRole` no encontró nada, y el
+ * nombre que se busca lo dedujo el propio motor: si el motor no le puso nombre al campo,
+ * ningún flujo puede referirse a él por ese nombre. Ser más permisivo aquí amplía lo que
+ * el script generado alcanza, no lo que confunde.
  */
 export function xpathLabelVisual(name: string): string {
   const eq = (t: string) => `normalize-space(.//label)=${xpathLiteral(t)}`;
