@@ -75,15 +75,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 1Editar",
@@ -97,15 +91,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 2Editar",
@@ -119,15 +107,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 3Editar",
@@ -141,15 +123,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 4Editar",
@@ -163,15 +139,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 5Editar",
@@ -185,15 +155,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 6Editar",
@@ -207,15 +171,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 7Editar",
@@ -229,15 +187,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 8Editar",
@@ -251,15 +203,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 9Editar",
@@ -273,15 +219,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 10Editar",
@@ -295,15 +235,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 11Editar",
@@ -317,15 +251,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 12Editar",
@@ -339,15 +267,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 13Editar",
@@ -361,15 +283,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 14Editar",
@@ -383,15 +299,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 15Editar",
@@ -405,15 +315,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 16Editar",
@@ -427,15 +331,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 17Editar",
@@ -449,15 +347,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 18Editar",
@@ -471,15 +363,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 19Editar",
@@ -493,15 +379,9 @@ exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot c
                       "role": "cell",
                     },
                     {
-                      "children": [
-                        {
-                          "children": [],
-                          "name": "Editar",
-                          "role": "button",
-                        },
-                      ],
+                      "children": [],
                       "name": "Editar",
-                      "role": "cell",
+                      "role": "button",
                     },
                   ],
                   "name": "Cliente 20Editar",

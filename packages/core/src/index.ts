@@ -7,3 +7,6 @@ export * from "./find.js";
 export * from "./serialize.js";
 export * from "./session.js";
 export * from "./normalize.js";
+export * from "./flow.js";
+export * from "./catalog.js";
+export * from "./stability.js";

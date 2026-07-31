@@ -51,6 +51,17 @@ export interface Backend {
    */
   performAt(locator: Locator, verb: Verb, args?: ActionArgs): Promise<void>;
 
+  /**
+   * Lleva al backend hasta un destino nombrado. OPCIONAL, porque no toda tecnología de
+   * UI tiene el concepto: en Web es `page.goto(url)`; en UIA (F2) sería lanzar o enfocar
+   * una aplicación por su ejecutable/ventana; en SAP, abrir una transacción.
+   *
+   * Un flujo grabado (F3) casi siempre empieza aquí, y por eso vive en el contrato en vez
+   * de en el adaptador: un flujo debe poder decir "ve a X" sin saber qué backend lo va a
+   * ejecutar. Un backend que no lo implemente simplemente no admite flujos con `goto`.
+   */
+  navigate?(target: string): Promise<void>;
+
   /** Libera recursos nativos (páginas, sesiones COM, procesos sidecar…). */
   dispose(): Promise<void>;
 }

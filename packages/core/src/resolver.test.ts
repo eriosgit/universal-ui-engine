@@ -32,7 +32,7 @@ describe("resolveFingerprint", () => {
     const testId = locator("testId", "save-button");
     const xpath = locator("xpath", "//button[3]");
     const backend = createFakeBackend({
-      tree: { role: "button", nativeRole: "button", name: null, states: new Set(), bounds: null, decorative: false, supports: [], locators: [], children: [], backend: "fake" },
+      tree: { role: "button", nativeRole: "button", name: null, automationId: null, description: null, options: null, states: new Set(), bounds: null, decorative: false, supports: [], locators: [], children: [], backend: "fake" },
       liveLocators: new Set([testId.value]),
     });
 
@@ -50,7 +50,7 @@ describe("resolveFingerprint", () => {
     const testId = locator("testId", "save-button-old");
     const roleAndName = locator("role+name", "button:Guardar");
     const backend = createFakeBackend({
-      tree: { role: "button", nativeRole: "button", name: null, states: new Set(), bounds: null, decorative: false, supports: [], locators: [], children: [], backend: "fake" },
+      tree: { role: "button", nativeRole: "button", name: null, automationId: null, description: null, options: null, states: new Set(), bounds: null, decorative: false, supports: [], locators: [], children: [], backend: "fake" },
       liveLocators: new Set([roleAndName.value]), // el testId "murió" en un rediseño
     });
 
@@ -66,7 +66,7 @@ describe("resolveFingerprint", () => {
   it("reporta no resuelto y todos los intentos cuando ningún locator sirve", async () => {
     const testId = locator("testId", "gone");
     const backend = createFakeBackend({
-      tree: { role: "button", nativeRole: "button", name: null, states: new Set(), bounds: null, decorative: false, supports: [], locators: [], children: [], backend: "fake" },
+      tree: { role: "button", nativeRole: "button", name: null, automationId: null, description: null, options: null, states: new Set(), bounds: null, decorative: false, supports: [], locators: [], children: [], backend: "fake" },
       liveLocators: new Set(),
     });
 

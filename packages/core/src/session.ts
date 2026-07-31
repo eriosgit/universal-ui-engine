@@ -2,7 +2,15 @@ import type { Backend, BackendRegion, RawNode } from "./backend.js";
 import { performVerb, type ActResult } from "./actions.js";
 import { find as findInTree, type Predicate } from "./find.js";
 import { resolveFingerprint } from "./resolver.js";
-import { serialize, stripInternalFields } from "./serialize.js";
+import { buildCatalog, type Catalog } from "./catalog.js";
+import { normalizeShape } from "./normalize.js";
+import {
+  DEFAULT_QUIET_MS,
+  realClock,
+  waitForQuiet,
+  type Clock,
+} from "./stability.js";
+import { serialize, signatureOf, stripInternalFields } from "./serialize.js";
 import type {
   ActionArgs,
   Fingerprint,
@@ -24,14 +32,23 @@ type SessionEntry = { fingerprint: Fingerprint; supports: Verb[] };
  * de Playwright, una ventana UIA…). El adaptador MCP/CLI decide cuántas sesiones abrir.
  */
 export class Session {
+  /** Expuesto para el ejecutor de flujos (`runFlow`), que necesita `navigate()` — la
+   * única capacidad del backend que no pasa por un nodo del árbol. */
+  get backend(): Backend {
+    return this.backendRef;
+  }
   private readonly nodes = new Map<string, SessionEntry>();
   private counter = 0;
+  /** Firmas de nodos hoja ya enviadas al consumidor en snapshots anteriores. Es lo que
+   * permite reconocer el cromo persistente (menú, cabecera) y dejar de repagarlo en cada
+   * pantalla — ver `collapseSeenChrome` en serialize.ts (ADR-0003). */
+  private readonly seenSignatures = new Set<string>();
 
-  constructor(private readonly backend: Backend) {}
+  constructor(private readonly backendRef: Backend) {}
 
   private mintUid(): string {
     this.counter += 1;
-    return `${this.backend.id}:${this.counter}`;
+    return `${this.backendRef.id}:${this.counter}`;
   }
 
   /** Asigna uid + registra fingerprint/supports para cada nodo del árbol crudo. La ruta
@@ -84,10 +101,81 @@ export class Session {
   async snapshot(options: SnapshotOptions = {}): Promise<Snapshot> {
     const { mode = "compact", ...region } = options;
     const backendRegion = await this.resolveRegion(region);
-    const raw = await this.backend.query(backendRegion);
+    const raw = await this.backendRef.query(backendRegion);
     const root = this.register(raw, []);
-    const { root: serialized, tokenEstimate } = serialize(root, mode);
+    const { root: serialized, tokenEstimate } = serialize(root, mode, this.seenSignatures);
+    // Registrar DESPUÉS de serializar, y sobre el árbol SERIALIZADO, no el crudo: "ya lo
+    // envié" solo tiene sentido medido sobre lo que de verdad se envió. (En el árbol
+    // crudo un link suele tener hijos —iconos, spans— así que no sería hoja y nunca se
+    // registraría; en el serializado, tras colapsar envoltorios, sí lo es.)
+    this.rememberSignatures(serialized);
     return { root: serialized, mode, tokenEstimate };
+  }
+
+  /**
+   * Huella de la FORMA del árbol (roles + nombres + jerarquía). La usa la espera por
+   * estabilidad (ADR-0005) para decidir si la pantalla dejó de cambiar.
+   */
+  async shapeFingerprint(region: Region = {}): Promise<string> {
+    const backendRegion = await this.resolveRegion(region);
+    const raw = await this.backendRef.query(backendRegion);
+    return JSON.stringify(normalizeShape(this.register(raw, [])));
+  }
+
+  /**
+   * ADR-0006 — la ÚNICA operación que entrega `locators`, y a propósito.
+   *
+   * `snapshot()`/`find()` siguen opacos: quien quiera actuar pasa por `uid` (D1). Esto es
+   * un documento de lectura, fechado, para llevarse los selectores a otro proyecto. La
+   * separación es el punto: no es un flag de `snapshot()` porque no es lo mismo reportar
+   * que actuar, y mezclarlos volvería a hacer fácil guardarse un selector y actuar con él
+   * más tarde — la clase de bug que D1 existe para impedir.
+   *
+   * NO pasa por `serialize()`: no se poda nada. El consumidor es un desarrollador que
+   * quiere todo, no un modelo con presupuesto de tokens (el gate de §3 mide snapshots).
+   */
+  async catalog(
+    options: Region & {
+      target: string;
+      scannedAt: string;
+      /**
+       * Espera a que la pantalla deje de cambiar antes de capturar. Por defecto SÍ, y es
+       * lo correcto: medido contra una SPA real, dos escaneos de la misma URL dieron 960
+       * y 207 nodos según cuándo cayera la captura. Un catálogo a medio cargar no falla
+       * ruidosamente — devuelve menos campos con toda la apariencia de estar completo.
+       * `false` lo desactiva para una página estática donde solo estorba.
+       */
+      stabilize?: false | { quietMs?: number; timeoutMs?: number };
+      clock?: Clock;
+    },
+  ): Promise<Catalog> {
+    const { target, scannedAt, stabilize, clock = realClock, ...region } = options;
+
+    if (stabilize !== false) {
+      await waitForQuiet(
+        () => this.shapeFingerprint(region),
+        stabilize?.quietMs ?? DEFAULT_QUIET_MS,
+        stabilize?.timeoutMs ?? 15_000,
+        clock,
+      );
+      // Si se agota el plazo se captura igual: una app con una animación perpetua nunca
+      // se aquieta, y en ese caso un catálogo del último estado vale más que un error.
+    }
+
+    const backendRegion = await this.resolveRegion(region);
+    const raw = await this.backendRef.query(backendRegion);
+    const root = this.register(raw, []);
+    return buildCatalog(root, { target, scannedAt });
+  }
+
+  private rememberSignatures(node: UINode): void {
+    // Un nodo ya resumido no se re-registra: su firma es la del resumen, no la de un
+    // elemento real de la pantalla.
+    if (node.collapsed) return;
+    if (node.children.length === 0) {
+      this.seenSignatures.add(signatureOf(node));
+    }
+    node.children.forEach((child) => this.rememberSignatures(child));
   }
 
   /**
@@ -102,7 +190,7 @@ export class Session {
    */
   async find(predicate: Predicate, region: Region = {}): Promise<UINode[]> {
     const backendRegion = await this.resolveRegion(region);
-    const raw = await this.backend.query(backendRegion);
+    const raw = await this.backendRef.query(backendRegion);
     const root = this.register(raw, []);
     return findInTree(root, predicate).map((match) => stripInternalFields(match.node));
   }
@@ -134,6 +222,6 @@ export class Session {
   }
 
   async dispose(): Promise<void> {
-    await this.backend.dispose();
+    await this.backendRef.dispose();
   }
 }

@@ -4,6 +4,12 @@ build/
 *.tsbuildinfo
 .turbo/
 coverage/
+
+# Tarballs de `npm pack` — artefactos de release, no fuente
+*.tgz
+
+# Salida temporal del E2E del bundle
+packages/uui-scan/test/.tmp-scan/
 .DS_Store
 Thumbs.db
 *.log

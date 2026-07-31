@@ -22,6 +22,9 @@ export type PageLocatorDescriptor = { kind: string; value: string };
 export type PageRawNode = {
   role: string;
   name: string | null;
+  automationId: string | null;
+  description: string | null;
+  options: string[] | null;
   value: string | null;
   states: string[];
   bounds: { x: number; y: number; w: number; h: number } | null;
@@ -59,6 +62,18 @@ export function runInPage(args: PageArgs): PageResult {
   // `.toString()` y la ejecuta en un contexto aislado del navegador — cualquier
   // constante a nivel de módulo (fuera de esta función) sería invisible ahí. Todo lo que
   // el script necesita tiene que vivir en este scope o más adentro.
+  // Roles que toman su nombre accesible del CONTENIDO (ARIA 1.2 §5.2.8.5).
+  //
+  // `listitem` NO está en esa lista de la especificación, y haberlo incluido causó un
+  // defecto real y caro: un `listitem` que envuelve un submenú entero recibía como
+  // "nombre" la concatenación del texto de TODOS sus descendientes
+  // ("ingresosfactura de ventafacturas de venta recurrentes…") — el mismo contenido
+  // pagado dos veces, en el padre y en cada hijo. Medido contra un dashboard real:
+  // 115 de 136 nodos eran menú, y buena parte del peso venía de esta duplicación.
+  //
+  // `alert` y `status` sí se mantienen, como desviación DELIBERADA de la spec: son
+  // regiones vivas donde el texto ES la información que el agente necesita leer
+  // ("Sesión iniciada como dev2"), no un mero rótulo. Ver ADR-0003.
   const NAME_FROM_CONTENT_ROLES = new Set([
     "button",
     "link",
@@ -70,7 +85,6 @@ export function runInPage(args: PageArgs): PageResult {
     "tab",
     "menuitem",
     "option",
-    "listitem",
     "treeitem",
     "tooltip",
     "alert",
@@ -171,6 +185,28 @@ export function runInPage(args: PageArgs): PageResult {
       }
       const closestLabel = el.closest("label");
       if (closestLabel?.textContent?.trim()) return closestLabel.textContent.trim();
+
+      // Label VISUAL no vinculado: muchísimas apps reales (medido en un SaaS de
+      // facturación) pintan `<div><label>Nombre*</label><input/></div>` sin `for`/`id`.
+      // Un lector de pantalla tampoco lo asocia — es un defecto de accesibilidad de la
+      // app — pero el label existe y es exactamente el nombre por el que un humano (y un
+      // agente) llama al campo. Sin esto, formularios enteros son inalcanzables por
+      // nombre y el motor deja de servir justo donde más valdría.
+      //
+      // Acotado a propósito para no robar el label de un campo vecino: se sube como
+      // máximo 3 ancestros, y solo se acepta si ese ancestro contiene UN único label y
+      // UN único control.
+      let ancestor: Element | null = el.parentElement;
+      for (let depth = 0; depth < 3 && ancestor; depth++) {
+        const labels = ancestor.querySelectorAll("label");
+        const controls = ancestor.querySelectorAll("input, textarea, select");
+        if (labels.length === 1 && controls.length === 1) {
+          const text = labels[0]?.textContent?.trim();
+          if (text) return text;
+        }
+        ancestor = ancestor.parentElement;
+      }
+
       const placeholder = el.getAttribute("placeholder");
       if (placeholder?.trim()) return placeholder.trim();
       return null;
@@ -186,6 +222,51 @@ export function runInPage(args: PageArgs): PageResult {
       return text || null;
     }
 
+    return null;
+  }
+
+  /**
+   * ADR-0006: texto de AYUDA, no de identidad. `placeholder` primero porque es lo que el
+   * usuario ve dentro del campo; `aria-describedby` después. Nunca se usa como nombre —
+   * para eso ya está computeName, que sí tiene su propio orden de prioridad.
+   */
+  function computeDescription(el: Element): string | null {
+    const placeholder = el.getAttribute("placeholder");
+    if (placeholder?.trim()) return placeholder.trim();
+
+    const describedBy = el.getAttribute("aria-describedby");
+    if (describedBy) {
+      const texto = describedBy
+        .split(/\s+/)
+        .map((id) => document.getElementById(id)?.textContent?.trim() ?? "")
+        .filter(Boolean)
+        .join(" ");
+      if (texto) return texto;
+    }
+
+    const title = el.getAttribute("title");
+    return title?.trim() ? title.trim() : null;
+  }
+
+  /** ADR-0006: opciones de un control de selección. `null` (no `[]`) en los que no lo son,
+   * para distinguir "no selecciona nada" de "selecciona, pero está vacío". */
+  function computeOptions(el: Element): string[] | null {
+    const tag = el.tagName.toLowerCase();
+    if (tag === "select") {
+      return Array.from(el.querySelectorAll("option")).map(
+        (option) => option.textContent?.trim() ?? "",
+      );
+    }
+    // <input list="..."> asociado a un <datalist>
+    const listId = el.getAttribute("list");
+    if (listId) {
+      const datalist = document.getElementById(listId);
+      if (datalist) {
+        return Array.from(datalist.querySelectorAll("option")).map(
+          (option) => option.getAttribute("value") ?? option.textContent?.trim() ?? "",
+        );
+      }
+    }
     return null;
   }
 
@@ -213,6 +294,12 @@ export function runInPage(args: PageArgs): PageResult {
     if (checked) states.push("checked");
 
     if (el.getAttribute("aria-expanded") === "true") states.push("expanded");
+
+    // ADR-0006: `required` es un estado del control, como readonly. Es de lo primero que
+    // un desarrollador quiere saber de un formulario escaneado.
+    const required =
+      (el as HTMLInputElement).required === true || el.getAttribute("aria-required") === "true";
+    if (required) states.push("required");
 
     const readonly =
       (el as HTMLInputElement).readOnly === true || el.getAttribute("aria-readonly") === "true";
@@ -313,8 +400,30 @@ export function runInPage(args: PageArgs): PageResult {
   ): { kind: string; value: string; confidence: number }[] {
     const locators: { kind: string; value: string; confidence: number }[] = [];
 
+    // La guarda de unicidad vale para los TRES locators estables, no solo para los dos
+    // nuevos. Un `data-testid` repetido (una lista renderizada con el mismo testid en cada
+    // fila es de lo más común) nunca resolvería —`resolveLocator` exige exactamente una
+    // coincidencia—, así que emitirlo solo servía para que el catálogo recomendara un
+    // selector que casa con varios elementos.
     const testId = el.getAttribute("data-testid");
-    if (testId) locators.push({ kind: "testId", value: testId, confidence: 0.95 });
+    if (testId && document.querySelectorAll(`[data-testid="${CSS.escape(testId)}"]`).length === 1) {
+      locators.push({ kind: "testId", value: testId, confidence: 0.95 });
+    }
+
+    // ADR-0006. Un `id` único es tan estable como un data-testid y muchísimo más común en
+    // apps que nunca instrumentaron nada — que son justo las que este escáner sirve. Solo
+    // se emite si de verdad identifica a UNO: los ids duplicados existen en apps reales.
+    const idAttr = el.getAttribute("id");
+    if (idAttr && document.querySelectorAll(`[id="${CSS.escape(idAttr)}"]`).length === 1) {
+      locators.push({ kind: "automationId", value: idAttr, confidence: 0.9 });
+    }
+
+    // El atributo `name` de un campo: estable frente a rediseños porque el backend de la
+    // propia app depende de él.
+    const attrName = el.getAttribute("name");
+    if (attrName && document.querySelectorAll(`[name="${CSS.escape(attrName)}"]`).length === 1) {
+      locators.push({ kind: "attrName", value: attrName, confidence: 0.85 });
+    }
 
     if (name && (roleNameCounts.get(`${role} ${name}`) ?? 0) === 1) {
       locators.push({ kind: "role+name", value: `${role} ${name}`, confidence: 0.8 });
@@ -334,6 +443,16 @@ export function runInPage(args: PageArgs): PageResult {
   function resolveLocator(desc: PageLocatorDescriptor): Element | null {
     if (desc.kind === "testId") {
       const matches = document.querySelectorAll(`[data-testid="${CSS.escape(desc.value)}"]`);
+      return matches.length === 1 ? matches[0]! : null;
+    }
+    // ADR-0006: los dos locators nuevos también tienen que RESOLVER, no solo reportarse —
+    // si no, un catálogo recomendaría un selector con el que el propio motor no sabe actuar.
+    if (desc.kind === "automationId") {
+      const matches = document.querySelectorAll(`[id="${CSS.escape(desc.value)}"]`);
+      return matches.length === 1 ? matches[0]! : null;
+    }
+    if (desc.kind === "attrName") {
+      const matches = document.querySelectorAll(`[name="${CSS.escape(desc.value)}"]`);
       return matches.length === 1 ? matches[0]! : null;
     }
     if (desc.kind === "css") {
@@ -459,6 +578,9 @@ export function runInPage(args: PageArgs): PageResult {
     return {
       role,
       name,
+      automationId: el.getAttribute("id"),
+      description: computeDescription(el),
+      options: computeOptions(el),
       value,
       states: computeStates(el),
       bounds,

@@ -13,10 +13,29 @@ import type { Role, UINode } from "./types.js";
 export type Predicate =
   | { kind: "role"; role: Role }
   | { kind: "nameContains"; text: string }
+  /**
+   * Igualdad exacta del nombre accesible (normalizada: sin espacios sobrantes, sin
+   * distinguir mayúsculas, y tolerando el `*` de "campo obligatorio" que muchas apps
+   * pegan al label).
+   *
+   * Existe porque `nameContains` es peligrosamente impreciso en formularios reales: al
+   * crear un ítem en un SaaS de facturación, `nameContains:"Nombre"` coincidió antes con
+   * la caja "Buscar por nombre o referencia" que con el campo "Nombre*" del formulario —
+   * y el agente terminó escribiendo en el buscador y enviando el formulario vacío. Para
+   * ACTUAR sobre un campo concreto, la igualdad exacta es lo correcto; `nameContains`
+   * queda para explorar.
+   */
+  | { kind: "nameEquals"; text: string }
   | { kind: "and"; all: Predicate[] };
 
 function normalize(text: string): string {
-  return text.trim().toLowerCase();
+  return text.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/** Quita el marcador de obligatoriedad para que `nameEquals("Nombre")` case con el label
+ * real "Nombre*" — la diferencia es de presentación, no de identidad del campo. */
+function normalizeName(text: string): string {
+  return normalize(text).replace(/\s*\*+$/, "");
 }
 
 export function matches(node: UINode, predicate: Predicate): boolean {
@@ -25,6 +44,8 @@ export function matches(node: UINode, predicate: Predicate): boolean {
       return node.role === predicate.role;
     case "nameContains":
       return node.name !== null && normalize(node.name).includes(normalize(predicate.text));
+    case "nameEquals":
+      return node.name !== null && normalizeName(node.name) === normalizeName(predicate.text);
     case "and":
       return predicate.all.every((p) => matches(node, p));
   }

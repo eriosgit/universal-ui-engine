@@ -5,6 +5,6 @@
     "outDir": "dist",
     "types": ["node"]
   },
-  "references": [{ "path": "../core" }, { "path": "../backend-web" }, { "path": "../codegen" }],
+  "references": [{ "path": "../core" }],
   "include": ["src"]
 }

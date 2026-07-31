@@ -11,14 +11,20 @@ están en `CONTEXT.md`; las decisiones congeladas en `docs/adr/`. Este archivo e
 
 ```bash
 pnpm install
-pnpm build       # tsc -b — construye los 4 paquetes en orden topológico (project refs)
+pnpm build       # tsc -b — construye los paquetes en orden topológico (project refs)
+pnpm build:pkg   # esbuild — empaqueta el workspace en el publicable `uui-scan`
 pnpm lint        # eslint . — incluye la regla que bloquea node.backend === '...' en core
 pnpm deps        # dependency-cruiser — bloquea que core importe backend-*/playwright
 pnpm test        # vitest — unitarias de core + conformidad + golden trees + tokens
 pnpm test:tokens # solo el gate de presupuesto de tokens (§3)
 pnpm test:golden # solo los golden trees (§6)
-pnpm verify      # build && lint && deps && test — lo mismo que corre en CI
+pnpm verify      # build && build:pkg && lint && deps && test — lo mismo que corre en CI
 ```
+
+**El producto es `uui-scan`** (ver `packages/uui-scan/`): un paquete npm con dos binarios
+(CLI + servidor MCP) que empaqueta el workspace con esbuild. `build:pkg` está DENTRO de
+`verify` a propósito: si el empaquetado se rompe, debe enterarse CI y no el usuario que
+instala desde npm.
 
 **Nota:** el script se llama `verify`, no `ci` — `pnpm ci` es un comando INTERNO de pnpm
 (equivalente a `npm ci`: borra `node_modules` y reinstala desde el lockfile) que

@@ -1,5 +1,7 @@
 packages:
   - "packages/*"
+allowBuilds:
+  esbuild: true
 minimumReleaseAgeExclude:
   - playwright-core@1.62.1
   - playwright@1.62.1

@@ -1,6 +1,6 @@
 name: CI
 
-# Cuatro gates que bloquean (Parte B2 del plan de ejecución de F0). El orden importa:
+# Cinco gates que bloquean (Parte B2 del plan de ejecución de F0). El orden importa:
 # `build` corre primero porque con project references de TypeScript, `typecheck` de un
 # paquete downstream (backend-web, adapter-*) necesita los .d.ts ya emitidos de sus
 # dependencias del workspace (@uui/core) — sin esto, `tsc -b` downstream ni siquiera
@@ -39,6 +39,14 @@ jobs:
       # orden topológico y falla en el primer error de tipos de cualquiera.
       - name: Build + typecheck
         run: pnpm build
+
+      # Gate 1b: el empaquetado del publicable. Va aquí, y no al final, porque un bundle
+      # roto es un fallo de RELEASE: si se descubre al publicar, ya lo sufrió el usuario
+      # que hizo `npx uui-scan`. Verifica también que `npm pack` incluya lo que debe.
+      - name: Empaquetar uui-scan
+        run: |
+          pnpm build:pkg
+          cd packages/uui-scan && npm pack --dry-run
 
       # Gate 2: lint.
       - name: Lint

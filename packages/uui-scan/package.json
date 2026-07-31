@@ -1,0 +1,59 @@
+{
+  "name": "uui-scan",
+  "version": "0.1.0",
+  "description": "Escanea una pantalla (web hoy, escritorio después) y devuelve el catálogo de selectores: cada campo con su id, name, tipo, si es obligatorio y con qué selector alcanzarlo. CLI + servidor MCP.",
+  "keywords": [
+    "selectors",
+    "scanner",
+    "playwright",
+    "testing",
+    "accessibility",
+    "mcp",
+    "page-object",
+    "automation"
+  ],
+  "homepage": "https://github.com/eriosgit/universal-ui-engine/tree/main/packages/uui-scan#readme",
+  "bugs": {
+    "url": "https://github.com/eriosgit/universal-ui-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eriosgit/universal-ui-engine.git",
+    "directory": "packages/uui-scan"
+  },
+  "license": "MIT",
+  "author": "Emmanuel Rios <erios@prevalentware.com>",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "uui-scan": "./dist/cli.js",
+    "uui-scan-mcp": "./dist/mcp.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "prepublishOnly": "pnpm -w run build && node build.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "commander": "^15.0.0",
+    "playwright": "^1.62.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "@uui/adapter-cli": "workspace:*",
+    "@uui/adapter-mcp": "workspace:*",
+    "esbuild": "^0.28.1",
+    "vitest": "^4.1.10"
+  }
+}

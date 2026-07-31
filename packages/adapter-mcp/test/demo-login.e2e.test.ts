@@ -8,7 +8,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
 /**
  * Demo de salida de F0 (Parte C7 del plan de ejecución): un agente inicia sesión en
- * `fixtures/web-app` usando SOLO las 3 herramientas MCP — sin un selector escrito a
+ * `fixtures/web-app` usando SOLO snapshot/find/act (sin ui.scan) — sin un selector escrito a
  * mano. Este archivo ES la demo: en vez de (o además de) una grabación de pantalla —que
  * no aporta mucho sobre un Chromium headless manejado por un cliente MCP de línea de
  * comandos— es una prueba automatizada que reproduce exactamente esos pasos y falla si
@@ -64,13 +64,27 @@ function textOf(result: Awaited<ReturnType<Client["callTool"]>>): string {
 }
 
 describe("Demo C7 — agente inicia sesión usando solo ui.snapshot/ui.find/ui.act", () => {
-  it("lista exactamente las 3 herramientas — ni una más", async () => {
+  // La lista pasó de 3 a 4 al añadir `ui.scan` (ADR-0006), que es la herramienta
+  // principal del producto. La aserción se actualiza, pero su INTENCIÓN no cambia: la
+  // lista es CERRADA y deliberada. Un servidor MCP que acumula herramientas le cuesta
+  // contexto al agente en cada conversación, así que cada alta debe romper este test y
+  // justificarse — no colarse.
+  it("lista exactamente las 4 herramientas — ni una más", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(["ui.act", "ui.find", "ui.snapshot"]);
+    expect(names).toEqual(["ui.act", "ui.find", "ui.scan", "ui.snapshot"]);
     // §5.2 / B2 gate 2: toda herramienta MCP declara su presupuesto de tokens.
     const snapshotTool = tools.find((t) => t.name === "ui.snapshot")!;
     expect(snapshotTool.description).toMatch(/token/i);
+  });
+
+  it("ui.scan advierte que expone selectores y ui.snapshot/ui.find no", async () => {
+    const { tools } = await client.listTools();
+    // Si esta distinción no queda clara en la descripción, el agente usará selectores
+    // para actuar y se saltará el uid re-resoluble (D1) sin enterarse.
+    const scan = tools.find((t) => t.name === "ui.scan")!;
+    expect(scan.description).toMatch(/selectores/i);
+    expect(scan.description).toMatch(/ui\.act/);
   });
 
   it("completa el login sin un solo selector escrito a mano", async () => {
