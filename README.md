@@ -74,29 +74,18 @@ pnpm build
 
 ## Uso
 
-### CLI (`uui`)
+**El consumidor de este motor es un agente de IA, no un humano.** La forma prevista de
+usarlo no es memorizar comandos: es conectarlo una vez a tu agente y pedírselo hablando.
+
+### Conéctalo a tu agente (la forma principal)
+
+Con Claude Code, un solo comando (ajusta la ruta a tu clon):
 
 ```bash
-# Escanear una página: snapshot compacto de su árbol de UI
-pnpm uui snapshot "https://ejemplo.com"
-
-# Lo mismo, acotado por rol (menos ruido, menos tokens)
-pnpm uui snapshot "https://ejemplo.com" --filter-role form
-
-# Buscar un control por nombre accesible
-pnpm uui find "https://ejemplo.com" "Guardar" --role button
-
-# Actuar: escribir en un campo, hacer clic — sin selectores
-pnpm uui act "https://ejemplo.com" setValue --find "Usuario" --value "dev2"
-pnpm uui act "https://ejemplo.com" invoke --find "Entrar" --role button
+claude mcp add uui -- node "<ruta-al-repo>/packages/adapter-mcp/dist/src/server.js"
 ```
 
-Flags útiles: `--mode full`, `--depth N`, `--filter-name texto`, `--headed` (navegador
-visible).
-
-### Servidor MCP
-
-Para conectarlo a un agente (Claude Code, o cualquier cliente MCP por stdio):
+Con cualquier otro cliente MCP (stdio), la configuración equivalente:
 
 ```json
 {
@@ -109,16 +98,35 @@ Para conectarlo a un agente (Claude Code, o cualquier cliente MCP por stdio):
 }
 ```
 
-Con Claude Code, el registro es un comando (ajusta la ruta al clon):
+Y a partir de ahí, se lo pides en lenguaje natural:
+
+> *«Escanea https://app.alegra.com y dime qué formularios tiene»*
+>
+> *«Entra a https://misitio.com/login con el usuario `ana`, contraseña `1234`, y dale a Entrar»*
+
+El agente ve las tres herramientas del servidor — `ui.snapshot`, `ui.find`, `ui.act` —
+y las usa solo: se orienta con un snapshot, encuentra los controles por su **nombre
+accesible** ("Correo electrónico", "Entrar"…) y actúa. Sin selectores, sin flags, sin
+que tú toques la terminal. Si el agente no las elige por su cuenta, basta con decirle
+"usa las herramientas de uui". La demo de referencia (un agente completa un login usando
+solo esas tres herramientas) vive como prueba E2E en
+`packages/adapter-mcp/test/demo-login.e2e.test.ts`.
+
+### CLI (`uui`) — para desarrollar y depurar el motor
+
+La CLI existe para quien trabaja EN el motor (o quiere ver crudo lo que el agente ve),
+no como interfaz de producto:
 
 ```bash
-claude mcp add uui -- node "<ruta-al-repo>/packages/adapter-mcp/dist/src/server.js"
+pnpm uui snapshot "https://ejemplo.com"                      # árbol de UI en JSON
+pnpm uui snapshot "https://ejemplo.com" --filter-role form   # acotado por rol
+pnpm uui find "https://ejemplo.com" "Guardar" --role button  # buscar por nombre
+pnpm uui act "https://ejemplo.com" invoke --find "Entrar"    # actuar
 ```
 
-Expone exactamente tres herramientas — `ui.snapshot`, `ui.find`, `ui.act` — cada una con
-su presupuesto de tokens declarado en la descripción. La demo de referencia (un agente
-completa un login usando solo esas tres herramientas) vive como prueba E2E en
-`packages/adapter-mcp/test/demo-login.e2e.test.ts`.
+Flags útiles: `--mode full`, `--depth N`, `--filter-name texto`, `--headed` (navegador
+visible). Un agente con acceso a terminal (p. ej. Claude Code sin el MCP registrado)
+también puede usarla directamente si le indicas la ruta del repo.
 
 ### App de referencia
 
