@@ -28,8 +28,8 @@
     "node": ">=20"
   },
   "bin": {
-    "uui-scan": "./dist/cli.js",
-    "uui-scan-mcp": "./dist/mcp.js"
+    "uui-scan": "dist/cli.js",
+    "uui-scan-mcp": "dist/mcp.js"
   },
   "files": [
     "dist",
