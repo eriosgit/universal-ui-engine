@@ -51,14 +51,15 @@ server.registerTool(
     title: "Snapshot de una región de UI",
     description:
       "Devuelve el árbol de UI de una región acotada (nunca el árbol completo — D2). " +
-      "Presupuesto de tokens objetivo: <3.000 en modo 'compact' para una región " +
-      "razonablemente acotada con root/maxDepth/filter (§3 del plan) — el campo " +
-      "tokenEstimate de la respuesta lo confirma en cada llamada. Un target grande sin " +
-      "acotar puede exceder ese objetivo a propósito: acota con maxDepth o filter antes " +
-      "de pedir de nuevo.",
+      "EMPIEZA SIEMPRE por mode:'actionable' (por defecto): es la respuesta a '¿qué puedo " +
+      "hacer aquí?' y cuesta un orden de magnitud menos — medido contra un dashboard " +
+      "real, 224 tokens frente a 6.811 del árbol completo. Usa 'compact' solo si " +
+      "necesitas leer contenido que no es accionable, y acótalo con root/maxDepth/filter. " +
+      "Presupuesto objetivo <3.000 tokens (§3); el campo tokenEstimate de la respuesta " +
+      "lo confirma en cada llamada.",
     inputSchema: {
       target: z.string().describe("URL http:// o file:// del documento a inspeccionar"),
-      mode: z.enum(["compact", "full"]).optional().default("compact"),
+      mode: z.enum(["actionable", "compact", "full"]).optional().default("actionable"),
       root: z.string().optional().describe("uid de un nodo devuelto antes, para anclar la región"),
       maxDepth: z.number().int().min(0).optional(),
       filterRole: RoleEnum.optional(),

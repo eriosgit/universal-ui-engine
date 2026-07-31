@@ -155,6 +155,12 @@ export type UINode = {
   decorative: boolean;
   /** Capacidades DEL NODO, no del backend (D6). */
   supports: Verb[];
+  /** Marcado por el serializador cuando este nodo RESUME un grupo de nodos que la sesión
+   * ya envió antes, idénticos, en otra pantalla — el cromo persistente (menú lateral,
+   * cabecera) que de otro modo se repagaría en cada snapshot (ADR-0003). No se pierde
+   * nada: `ui.find` siempre recorre el árbol completo, así que cualquier nodo resumido
+   * aquí se localiza por nombre cuando de verdad haga falta actuar sobre él. */
+  collapsed?: boolean;
   /** Opcional a propósito: el backend SIEMPRE lo puebla (es lo que hace re-resoluble al
    * `uid`), pero el serializador lo OMITE por completo al proyectar hacia un consumidor
    * (ver `stripInternalFields` en serialize.ts) — exponerlo violaría la opacidad de D1 y
@@ -178,7 +184,18 @@ export type Region = {
   filter?: { role?: Role; nameContains?: string };
 };
 
-export type SerializeMode = "compact" | "full";
+/**
+ * Proyecciones del árbol hacia un consumidor (ADR-0003):
+ *
+ * - `actionable`: SOLO lo que el agente puede accionar (nodos con un verbo significativo)
+ *   más los `heading` que dan contexto. Es la respuesta a "¿qué puedo hacer aquí?" y la
+ *   proyección más barata con diferencia — medida contra un dashboard real: 224 tokens
+ *   frente a 6.811 del árbol completo.
+ * - `compact`: el árbol legible, sin decorativos, sin bounds y sin envoltorios
+ *   redundantes. Para "¿qué hay en esta pantalla?".
+ * - `full`: todo, incluidos decorativos y bounds. Para depurar el motor.
+ */
+export type SerializeMode = "actionable" | "compact" | "full";
 
 export type SnapshotOptions = Region & { mode?: SerializeMode };
 

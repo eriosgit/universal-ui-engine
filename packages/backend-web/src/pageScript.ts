@@ -59,6 +59,18 @@ export function runInPage(args: PageArgs): PageResult {
   // `.toString()` y la ejecuta en un contexto aislado del navegador — cualquier
   // constante a nivel de módulo (fuera de esta función) sería invisible ahí. Todo lo que
   // el script necesita tiene que vivir en este scope o más adentro.
+  // Roles que toman su nombre accesible del CONTENIDO (ARIA 1.2 §5.2.8.5).
+  //
+  // `listitem` NO está en esa lista de la especificación, y haberlo incluido causó un
+  // defecto real y caro: un `listitem` que envuelve un submenú entero recibía como
+  // "nombre" la concatenación del texto de TODOS sus descendientes
+  // ("ingresosfactura de ventafacturas de venta recurrentes…") — el mismo contenido
+  // pagado dos veces, en el padre y en cada hijo. Medido contra un dashboard real:
+  // 115 de 136 nodos eran menú, y buena parte del peso venía de esta duplicación.
+  //
+  // `alert` y `status` sí se mantienen, como desviación DELIBERADA de la spec: son
+  // regiones vivas donde el texto ES la información que el agente necesita leer
+  // ("Sesión iniciada como dev2"), no un mero rótulo. Ver ADR-0003.
   const NAME_FROM_CONTENT_ROLES = new Set([
     "button",
     "link",
@@ -70,7 +82,6 @@ export function runInPage(args: PageArgs): PageResult {
     "tab",
     "menuitem",
     "option",
-    "listitem",
     "treeitem",
     "tooltip",
     "alert",

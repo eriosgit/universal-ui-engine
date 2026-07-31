@@ -183,6 +183,7 @@ references, el typecheck de `backend-web`/`adapter-*` necesita los `.d.ts` emiti
 | [`CONTEXT.md`](CONTEXT.md) | Glosario del dominio (nodo, locator, fingerprint, verbo…), invariantes no negociables, mapa del repo |
 | [`docs/adr/ADR-0001-modelo-universal.md`](docs/adr/ADR-0001-modelo-universal.md) | El Modelo Universal de UI: qué es un `uid`, roles canónicos, poda de decorativos, coordenadas — con las alternativas descartadas y los bugs reales que ajustaron el diseño |
 | [`docs/adr/ADR-0002-contrato-backend.md`](docs/adr/ADR-0002-contrato-backend.md) | El contrato core↔Backend: regiones perezosas, verbos por nodo, y por qué `if (backend === 'x')` es estructuralmente imposible |
+| [`docs/adr/ADR-0003-presupuesto-de-tokens.md`](docs/adr/ADR-0003-presupuesto-de-tokens.md) | Por qué un snapshot costaba 6.811 tokens en una pantalla vacía y qué se hizo: modo `actionable`, colapso de envoltorios y resumen del cromo persistente — con lo medido y lo que aún falta |
 | [`docs/specs/`](docs/specs/) | Una spec por unidad de trabajo, con criterios de aceptación y evidencia |
 | [`CLAUDE.md`](CLAUDE.md) | Flujo de trabajo para agentes de IA que desarrollan en este repo |
 

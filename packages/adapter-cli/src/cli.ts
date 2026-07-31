@@ -86,7 +86,7 @@ program
   .command("snapshot")
   .description("Toma un snapshot de una región del target (con tu sesión guardada, si existe)")
   .argument("<target>", "URL http:// o file:// a abrir")
-  .option("-m, --mode <mode>", "compact | full", "compact")
+  .option("-m, --mode <mode>", "actionable | compact | full", "compact")
   .option("-d, --depth <n>", "maxDepth", (v) => Number.parseInt(v, 10))
   .option("--filter-role <role>", "filtrar por role canónico")
   .option("--filter-name <text>", "filtrar por nombre (contiene)")
@@ -97,7 +97,7 @@ program
     async (
       target: string,
       opts: {
-        mode: "compact" | "full";
+        mode: "actionable" | "compact" | "full";
         depth?: number;
         filterRole?: string;
         filterName?: string;

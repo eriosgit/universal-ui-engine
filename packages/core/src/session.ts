@@ -2,7 +2,7 @@ import type { Backend, BackendRegion, RawNode } from "./backend.js";
 import { performVerb, type ActResult } from "./actions.js";
 import { find as findInTree, type Predicate } from "./find.js";
 import { resolveFingerprint } from "./resolver.js";
-import { serialize, stripInternalFields } from "./serialize.js";
+import { serialize, signatureOf, stripInternalFields } from "./serialize.js";
 import type {
   ActionArgs,
   Fingerprint,
@@ -26,6 +26,10 @@ type SessionEntry = { fingerprint: Fingerprint; supports: Verb[] };
 export class Session {
   private readonly nodes = new Map<string, SessionEntry>();
   private counter = 0;
+  /** Firmas de nodos hoja ya enviadas al consumidor en snapshots anteriores. Es lo que
+   * permite reconocer el cromo persistente (menú, cabecera) y dejar de repagarlo en cada
+   * pantalla — ver `collapseSeenChrome` en serialize.ts (ADR-0003). */
+  private readonly seenSignatures = new Set<string>();
 
   constructor(private readonly backend: Backend) {}
 
@@ -86,8 +90,23 @@ export class Session {
     const backendRegion = await this.resolveRegion(region);
     const raw = await this.backend.query(backendRegion);
     const root = this.register(raw, []);
-    const { root: serialized, tokenEstimate } = serialize(root, mode);
+    const { root: serialized, tokenEstimate } = serialize(root, mode, this.seenSignatures);
+    // Registrar DESPUÉS de serializar, y sobre el árbol SERIALIZADO, no el crudo: "ya lo
+    // envié" solo tiene sentido medido sobre lo que de verdad se envió. (En el árbol
+    // crudo un link suele tener hijos —iconos, spans— así que no sería hoja y nunca se
+    // registraría; en el serializado, tras colapsar envoltorios, sí lo es.)
+    this.rememberSignatures(serialized);
     return { root: serialized, mode, tokenEstimate };
+  }
+
+  private rememberSignatures(node: UINode): void {
+    // Un nodo ya resumido no se re-registra: su firma es la del resumen, no la de un
+    // elemento real de la pantalla.
+    if (node.collapsed) return;
+    if (node.children.length === 0) {
+      this.seenSignatures.add(signatureOf(node));
+    }
+    node.children.forEach((child) => this.rememberSignatures(child));
   }
 
   /**
