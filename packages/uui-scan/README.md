@@ -45,6 +45,12 @@ CSS de 200 caracteres: es una entrada con `×20` y el índice parametrizado.
 | Editar ×20 | button | `… tr:nth-child({n}) > td:nth-child(2) > button` (css · 20 elementos) |
 ```
 
+**Espera a que la pantalla se asiente.** Una SPA renderiza por etapas, y capturar a
+destiempo devuelve un catálogo corto **con toda la apariencia de estar completo** — que es
+peor que un error, porque no te enteras. Medido contra una app real: tres escaneos de la
+misma URL daban 960, 207 y 207 nodos. Con la espera: 905, 905, 905. Se desactiva con
+`--no-wait` si la página es estática.
+
 **Ve tu sesión.** `uui-scan login <url>` abre un navegador visible, inicias sesión a mano y
 se guarda el perfil. A partir de ahí escaneas pantallas detrás del login sin automatizar
 credenciales ni guardarlas en ningún sitio.
@@ -65,8 +71,17 @@ npx uui-scan scan https://tuapp.com/facturas --filter-role form
 npx uui-scan login https://tuapp.com
 ```
 
-Opciones útiles: `--format json` (por defecto imprime Markdown), `--name <archivo>`,
-`--clean` (navegador sin tu perfil), `--headed` (navegador visible), `--profile <dir>`.
+| Opción | Para qué |
+|---|---|
+| `--out <dir>` | escribe `<nombre>.json` y `<nombre>.md` |
+| `--format json` | por stdout; por defecto imprime Markdown |
+| `--name <archivo>` | nombre base de los archivos (si no, se deriva de la URL) |
+| `--filter-role <rol>` · `--filter-name <texto>` | acota el escaneo a una región |
+| `--quiet-ms <n>` | ms sin cambios antes de capturar (500 por defecto) |
+| `--no-wait` | captura de inmediato, sin esperar a la SPA |
+| `--clean` | navegador sin tu perfil |
+| `--headed` | navegador visible |
+| `--profile <dir>` | perfil alterno — p. ej. uno por cliente |
 
 ## Como servidor MCP
 
