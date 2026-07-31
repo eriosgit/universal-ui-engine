@@ -39,6 +39,42 @@ function first(predicate: Predicate): string {
  * testing". Estas equivalencias usan solo la API de `playwright` y lanzan al fallar, que
  * es lo que un proceso automatizado necesita para terminar con código de salida ≠ 0.
  */
+/**
+ * Localizador con RESPALDO — cierra la divergencia documentada en ADR-0004.
+ *
+ * `getByRole(role, {name})` usa el árbol de accesibilidad REAL del navegador. Pero muchas
+ * apps pintan `<div><label>Nombre*</label><input/></div>` sin vincular el label con
+ * `for`/`id`: el motor de uui deduce ese nombre a propósito (si no, formularios enteros
+ * serían inalcanzables), y el navegador no. Resultado: `uui run` encuentra el campo y el
+ * `getByRole` generado no.
+ *
+ * En vez de exigir que el flujo sepa de dónde salió cada nombre, el código generado prueba
+ * primero lo robusto (rol + nombre accesible) y solo si no hay coincidencias cae al label
+ * visual. Determinista, sin IA, y sin depender de selectores CSS del maquetado.
+ */
+const LOCATE_HELPER = [
+  "type RoleName = Parameters<typeof page.getByRole>[0];",
+  "",
+  "async function locate(role: string, name?: string, exact = true): Promise<Locator> {",
+  "  if (!name) return page.getByRole(role as RoleName).first();",
+  "  const byRole = page.getByRole(role as RoleName, { name, exact }).first();",
+  "  if ((await byRole.count()) > 0) return byRole;",
+  "  // Respaldo: <label> visual no vinculado con for/id (ver ADR-0004).",
+  '  const esc = name.replace(/"/g, \'\\\\"\');',
+  "  const byVisualLabel = page.locator(",
+  "    `xpath=//label[normalize-space(.)=\"${esc}\" or normalize-space(.)=\"${esc}*\"]` +",
+  '      `/following::*[self::input or self::textarea or self::select][1]`,',
+  "  );",
+  "  if ((await byVisualLabel.count()) > 0) return byVisualLabel.first();",
+  "  return byRole; // deja que falle con el mensaje de Playwright, que es más informativo",
+  "}",
+  "",
+  "async function locateText(text: string, exact = true): Promise<Locator> {",
+  "  return page.getByText(text, { exact }).first();",
+  "}",
+  "",
+];
+
 const STANDALONE_HELPERS = [
   "async function assertVisible(locator: Locator, desc: string): Promise<void> {",
   "  try {",
@@ -80,45 +116,100 @@ const STANDALONE_HELPERS = [
   "",
 ];
 
-/** Igual que `stepCode` pero sin depender de `@playwright/test`. */
-function stepCodeStandalone(step: FlowStep): string[] {
-  const comentario = `  // ${step.label ?? step.action}`;
-  // Solo los pasos con predicado necesitan descripción; `goto` no tiene `target` de ese
-  // tipo (el suyo es una URL), así que se delega directo al generador común.
-  if (step.action === "goto" || step.action === "waitFor" || step.action === "act") {
-    return stepCode(step);
+/** Expresión que resuelve el objetivo de un paso usando el helper `locate` con respaldo. */
+function locateCall(predicate: Predicate): string {
+  const f = flatten(predicate);
+  if (f.role) {
+    const nombre = f.nameEquals ?? f.nameContains;
+    if (nombre === undefined) return `await locate(${quoteJs(f.role)})`;
+    return `await locate(${quoteJs(f.role)}, ${quoteJs(nombre)}, ${String(Boolean(f.nameEquals))})`;
   }
+  const texto = f.nameEquals ?? f.nameContains ?? "";
+  return `await locateText(${quoteJs(texto)}, ${String(Boolean(f.nameEquals))})`;
+}
+
+/** Igual que `stepCode` pero sin `@playwright/test` y usando `locate` (con respaldo). */
+function stepCodeStandalone(step: FlowStep, index: number): string[] {
+  const comentario = `  // ${step.label ?? step.action}`;
+  if (step.action === "goto") {
+    return [comentario, `  await page.goto(${quoteJs(step.target)});`];
+  }
+
+  const objetivo = `el${index}`;
+  const resolver = `  const ${objetivo} = ${locateCall(step.target)};`;
   const desc = quoteJs(describePredicate(step.target));
 
-  if (step.action === "waitForValue") {
-    return [
-      `${comentario} — espera a que el campo derivado termine de calcularse`,
-      `  await assertValueNotEmpty(${first(step.target)}, ${step.timeoutMs ?? 15000}, ${desc});`,
-    ];
-  }
+  switch (step.action) {
+    case "waitFor":
+      return [
+        `${comentario} — espera por condición, no por tiempo fijo`,
+        resolver,
+        `  await assertVisible(${objetivo}, ${desc});`,
+      ];
 
-  if (step.action === "expect") {
-    switch (step.assert) {
-      case "exists":
-        return [comentario, `  await assertVisible(${first(step.target)}, ${desc});`];
-      case "notExists":
-        return [comentario, `  await assertCount(${locator(step.target)}, 0, ${desc});`];
-      case "count":
-        return [comentario, `  await assertCount(${locator(step.target)}, ${step.count ?? 0}, ${desc});`];
-      case "nameEquals":
-        return [
-          comentario,
-          `  await assertText(${first(step.target)}, ${quoteJs(step.value ?? "")}, "equals", ${desc});`,
-        ];
-      case "nameContains":
-        return [
-          comentario,
-          `  await assertText(${first(step.target)}, ${quoteJs(step.value ?? "")}, "contains", ${desc});`,
-        ];
-    }
-  }
+    case "waitForValue":
+      return [
+        `${comentario} — espera a que el campo derivado termine de calcularse`,
+        resolver,
+        `  await assertValueNotEmpty(${objetivo}, ${step.timeoutMs ?? 15000}, ${desc});`,
+      ];
 
-  return stepCode(step);
+    case "act":
+      switch (step.verb) {
+        case "invoke":
+        case "toggle":
+        case "expand":
+          return [comentario, resolver, `  await ${objetivo}.click();`];
+        case "setValue":
+          return [comentario, resolver, `  await ${objetivo}.fill(${quoteJs(step.value ?? "")});`];
+        case "select":
+          return [
+            comentario,
+            resolver,
+            step.value !== undefined
+              ? `  await ${objetivo}.selectOption(${quoteJs(step.value)});`
+              : `  await ${objetivo}.click();`,
+          ];
+        case "focus":
+          return [comentario, resolver, `  await ${objetivo}.focus();`];
+        case "scrollIntoView":
+          return [comentario, resolver, `  await ${objetivo}.scrollIntoViewIfNeeded();`];
+      }
+      break;
+
+    case "expect":
+      switch (step.assert) {
+        case "exists":
+          return [comentario, resolver, `  await assertVisible(${objetivo}, ${desc});`];
+        case "notExists":
+          return [comentario, `  await assertCount(${locator(step.target)}, 0, ${desc});`];
+        case "count":
+          return [comentario, `  await assertCount(${locator(step.target)}, ${step.count ?? 0}, ${desc});`];
+        case "nameEquals":
+          return [
+            comentario,
+            resolver,
+            `  await assertText(${objetivo}, ${quoteJs(step.value ?? "")}, "equals", ${desc});`,
+          ];
+        case "nameContains":
+          return [
+            comentario,
+            resolver,
+            `  await assertText(${objetivo}, ${quoteJs(step.value ?? "")}, "contains", ${desc});`,
+          ];
+      }
+      break;
+
+    case "extract":
+      return [
+        comentario,
+        resolver,
+        `  datos[${quoteJs(step.name)}] = (await ${objetivo}.${
+          step.field === "value" ? "inputValue()" : "textContent()"
+        }) ?? null;`,
+      ];
+  }
+  return [comentario, "  // (paso no soportado por este generador)"];
 }
 
 function stepCode(step: FlowStep): string[] {
@@ -255,15 +346,16 @@ export function generatePlaywrightTs(flow: Flow, options: PlaywrightOptions = {}
     "// uno dedicado en el servidor de automatización.",
     'const profileDir = process.env.UUI_PROFILE ?? join(homedir(), ".uui", "profile");',
     "",
-    ...STANDALONE_HELPERS,
     "const context = await chromium.launchPersistentContext(profileDir, { headless: " +
       String(options.headless ?? true) +
       " });",
     "const page = context.pages()[0] ?? (await context.newPage());",
     "const datos: Record<string, string | null> = {};",
     "",
+    ...LOCATE_HELPER,
+    ...STANDALONE_HELPERS,
     "try {",
-    ...flow.steps.flatMap(stepCodeStandalone),
+    ...flow.steps.flatMap((step, index) => stepCodeStandalone(step, index)),
     "  console.log(JSON.stringify(datos, null, 2));",
     "} finally {",
     "  await context.close();",

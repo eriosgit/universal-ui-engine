@@ -1,6 +1,6 @@
 {
   "name": "alegra-crear-servicio",
-  "description": "Crea un ítem de venta tipo Servicio en Alegra y valida que quedó en la lista. Descubierto con `uui find` contra la app real; se ejecuta sin IA.",
+  "description": "Crea UN ítem de venta tipo Servicio en Alegra y valida que quedó en la lista. Descubierto con `uui find` contra la app real; se ejecuta sin IA.",
   "defaultTimeoutMs": 20000,
   "steps": [
     { "action": "goto", "target": "https://app.alegra.com/item", "label": "Abrir ítems de venta" },
@@ -31,20 +31,20 @@
       "target": { "kind": "and", "all": [{ "kind": "role", "role": "textbox" }, { "kind": "nameEquals", "text": "Unidad de medida" }] },
       "expect": "nonEmpty",
       "timeoutMs": 15000,
-      "label": "Esperar a que la app autocomplete la Unidad de medida al elegir el tipo"
+      "label": "Esperar a que la app autocomplete la Unidad de medida"
     },
     {
       "action": "act",
       "target": { "kind": "and", "all": [{ "kind": "role", "role": "textbox" }, { "kind": "nameEquals", "text": "Nombre" }] },
       "verb": "setValue",
-      "value": "Mantenimiento preventivo trimestral",
+      "value": "Auditoría de seguridad informática",
       "label": "Escribir el nombre del servicio"
     },
     {
       "action": "act",
       "target": { "kind": "and", "all": [{ "kind": "role", "role": "textbox" }, { "kind": "nameEquals", "text": "Precio base" }] },
       "verb": "setValue",
-      "value": "780000",
+      "value": "1250000",
       "label": "Escribir el precio base"
     },
     {
@@ -68,14 +68,14 @@
     },
     {
       "action": "expect",
-      "target": { "kind": "and", "all": [{ "kind": "role", "role": "link" }, { "kind": "nameEquals", "text": "Mantenimiento preventivo trimestral" }] },
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "link" }, { "kind": "nameEquals", "text": "Auditoría de seguridad informática" }] },
       "assert": "exists",
       "label": "Validar que el servicio aparece en la lista"
     },
     {
       "action": "extract",
       "name": "servicioCreado",
-      "target": { "kind": "and", "all": [{ "kind": "role", "role": "link" }, { "kind": "nameEquals", "text": "Mantenimiento preventivo trimestral" }] },
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "link" }, { "kind": "nameEquals", "text": "Auditoría de seguridad informática" }] },
       "label": "Capturar el nombre del servicio creado"
     }
   ]
