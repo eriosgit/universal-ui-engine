@@ -48,32 +48,155 @@ function first(predicate: Predicate): string {
  * serían inalcanzables), y el navegador no. Resultado: `uui run` encuentra el campo y el
  * `getByRole` generado no.
  *
- * En vez de exigir que el flujo sepa de dónde salió cada nombre, el código generado prueba
- * primero lo robusto (rol + nombre accesible) y solo si no hay coincidencias cae al label
- * visual. Determinista, sin IA, y sin depender de selectores CSS del maquetado.
+ * El respaldo replica la regla del motor (`backend-web/src/pageScript.ts`), **incluida su
+ * guarda de unicidad**: un contenedor vale como etiqueta solo si tiene UN label y UN
+ * control. La primera versión usaba `//label[...]/following::input[1]`, que no tiene esa
+ * guarda: el eje `following` recorre el documento entero, así que si un label no va
+ * seguido de su propio control, se lleva el del campo SIGUIENTE — silenciosamente y con
+ * el nombre equivocado. (En la app donde se probó, ambas expresiones coinciden; esto
+ * cierra una divergencia con el motor, no arregla un fallo observado allí. Ver el test
+ * `divergencia` para un DOM donde sí difieren.)
+ *
+ * Se añade además el respaldo por `placeholder`, que es la última regla de nombres del
+ * motor: sin él, un campo cuyo nombre viene del placeholder es inalcanzable en el script
+ * generado aunque `uui run` lo encuentre.
+ *
+ * La elección entre estrategias es PEREZOSA: decidir con `count()` sobre un DOM a medio
+ * renderizar congela la rama equivocada para siempre, porque el `Locator` devuelto ya no
+ * vuelve a evaluarla. Se espera a que aparezca cualquiera y solo entonces se decide,
+ * respetando el orden de prioridad del motor (rol/nombre accesible → label → placeholder).
  */
-const LOCATE_HELPER = [
-  "type RoleName = Parameters<typeof page.getByRole>[0];",
-  "",
-  "async function locate(role: string, name?: string, exact = true): Promise<Locator> {",
-  "  if (!name) return page.getByRole(role as RoleName).first();",
-  "  const byRole = page.getByRole(role as RoleName, { name, exact }).first();",
-  "  if ((await byRole.count()) > 0) return byRole;",
-  "  // Respaldo: <label> visual no vinculado con for/id (ver ADR-0004).",
-  '  const esc = name.replace(/"/g, \'\\\\"\');',
-  "  const byVisualLabel = page.locator(",
-  "    `xpath=//label[normalize-space(.)=\"${esc}\" or normalize-space(.)=\"${esc}*\"]` +",
-  '      `/following::*[self::input or self::textarea or self::select][1]`,',
-  "  );",
-  "  if ((await byVisualLabel.count()) > 0) return byVisualLabel.first();",
-  "  return byRole; // deja que falle con el mensaje de Playwright, que es más informativo",
-  "}",
-  "",
-  "async function locateText(text: string, exact = true): Promise<Locator> {",
-  "  return page.getByText(text, { exact }).first();",
-  "}",
-  "",
-];
+/**
+ * Roles que el motor asigna a `input`/`textarea`/`select` (ver el mapa tag→rol en
+ * `backend-web/src/pageScript.ts`). Solo para estos deduce el nombre a partir del label
+ * del contenedor o del placeholder, así que solo para estos tiene sentido el respaldo.
+ */
+const ROLES_CON_RESPALDO = new Set<string>([
+  "textbox",
+  "searchbox",
+  "combobox",
+  "spinbutton",
+  "checkbox",
+  "radio",
+  "slider",
+]);
+
+/**
+ * Literal XPath seguro. XPath 1.0 NO tiene escapes dentro de una cadena: `\"` no
+ * significa nada ahí. Un nombre con comillas dobles hay que partirlo con `concat()`.
+ */
+export function xpathLiteral(s: string): string {
+  if (!s.includes('"')) return `"${s}"`;
+  if (!s.includes("'")) return `'${s}'`;
+  return `concat(${s
+    .split('"')
+    .map((p) => `"${p}"`)
+    .join(`, '"', `)})`;
+}
+
+/**
+ * XPath que replica la regla de nombres del motor para labels visuales no vinculados.
+ * El nombre se conoce en tiempo de GENERACIÓN, así que el XPath se emite ya calculado:
+ * la regla vive una sola vez (aquí, testeable) en vez de duplicada dentro del texto que
+ * se genera, y además queda a la vista en el script para quien lo revise en un PR.
+ */
+export function xpathLabelVisual(name: string): string {
+  const eq = (t: string) => `normalize-space(.//label)=${xpathLiteral(t)}`;
+  return (
+    `xpath=//*[count(.//label)=1 and count(.//input|.//textarea|.//select)=1` +
+    ` and (${eq(name)} or ${eq(`${name}*`)})]` +
+    `//*[self::input or self::textarea or self::select]`
+  );
+}
+
+const LOCATE_HELPER = `
+type RoleName = Parameters<typeof page.getByRole>[0];
+
+async function locate(
+  role: string,
+  name?: string,
+  exact = true,
+  xpathLabel?: string,
+): Promise<Locator> {
+  if (!name) return page.getByRole(role as RoleName).first();
+  const byRole = page.getByRole(role as RoleName, { name, exact });
+  // Los respaldos son reglas de nombre de CONTROLES de formulario (input/textarea/select).
+  // El generador solo pasa xpathLabel para roles de control: aplicarlos a un "button"
+  // resolvería a un campo de texto con ese nombre.
+  if (!xpathLabel) return byRole.first();
+  const byLabel = page.locator(xpathLabel);
+  const byPlaceholder = page.getByPlaceholder(name, { exact });
+  // Espera a que exista ALGUNA antes de decidir: decidir con count() sobre un DOM a
+  // medio renderizar congela la rama equivocada y el locator devuelto ya no re-evalúa.
+  await byRole.or(byLabel).or(byPlaceholder).first().waitFor({ state: "attached" }).catch(() => {});
+  if ((await byRole.count()) > 0) return byRole.first();
+  if ((await byLabel.count()) > 0) return byLabel.first();
+  if ((await byPlaceholder.count()) > 0) return byPlaceholder.first();
+  return byRole.first(); // deja que falle con el mensaje de Playwright, que es más informativo
+}
+
+async function locateText(text: string, exact = true): Promise<Locator> {
+  return page.getByText(text, { exact }).first();
+}
+`
+  .trimStart()
+  .split("\n");
+
+/**
+ * Traducción de `waitForStable` (ADR-0005) al código generado.
+ *
+ * En el script no existe el árbol universal, así que la misma semántica —"nada cambió
+ * durante `quietMs` seguidos"— se mide con un `MutationObserver` sobre el DOM. Es la
+ * espera que necesita una SPA que renderiza en varias etapas: `waitFor` se cumple en la
+ * primera y actuar ahí deja el formulario a medio inicializar.
+ *
+ * `pageParam` distingue los dos targets: el script suelto tiene `page` en el módulo; el
+ * de `@playwright/test` la recibe como fixture.
+ */
+function waitForStableHelper(pageParam: boolean): string[] {
+  const firma = pageParam
+    ? "async function waitForStable(page: Page, quietMs: number, timeoutMs: number): Promise<void> {"
+    : "async function waitForStable(quietMs: number, timeoutMs: number): Promise<void> {";
+  return [
+    firma,
+    "  await page.evaluate(",
+    "    ([quiet, limite]) =>",
+    "      new Promise<void>((resolve, reject) => {",
+    "        let timer: ReturnType<typeof setTimeout> | undefined;",
+    "        let vencimiento: ReturnType<typeof setTimeout> | undefined;",
+    "        function listo() {",
+    "          observer.disconnect();",
+    "          clearTimeout(timer);",
+    "          clearTimeout(vencimiento);",
+    "          resolve();",
+    "        }",
+    "        const observer = new MutationObserver(() => {",
+    "          clearTimeout(timer);",
+    "          timer = setTimeout(listo, quiet);",
+    "        });",
+    "        vencimiento = setTimeout(() => {",
+    "          observer.disconnect();",
+    "          clearTimeout(timer);",
+    "          reject(",
+    "            new Error(",
+    "              `El DOM siguió cambiando durante ${limite}ms sin quedarse quieto ${quiet}ms seguidos.`,",
+    "            ),",
+    "          );",
+    "        }, limite);",
+    "        observer.observe(document, {",
+    "          childList: true,",
+    "          subtree: true,",
+    "          attributes: true,",
+    "          characterData: true,",
+    "        });",
+    "        timer = setTimeout(listo, quiet);",
+    "      }),",
+    "    [quietMs, timeoutMs] as const,",
+    "  );",
+    "}",
+    "",
+  ];
+}
 
 const STANDALONE_HELPERS = [
   "async function assertVisible(locator: Locator, desc: string): Promise<void> {",
@@ -122,7 +245,12 @@ function locateCall(predicate: Predicate): string {
   if (f.role) {
     const nombre = f.nameEquals ?? f.nameContains;
     if (nombre === undefined) return `await locate(${quoteJs(f.role)})`;
-    return `await locate(${quoteJs(f.role)}, ${quoteJs(nombre)}, ${String(Boolean(f.nameEquals))})`;
+    // El respaldo solo aplica a coincidencia EXACTA (la regla del motor compara el texto
+    // completo del label, no una subcadena) y solo a roles de CONTROL de formulario, que
+    // es donde el motor deduce el nombre a partir del label o del placeholder.
+    const aplica = Boolean(f.nameEquals) && ROLES_CON_RESPALDO.has(f.role);
+    const respaldo = aplica ? `, ${quoteJs(xpathLabelVisual(nombre))}` : "";
+    return `await locate(${quoteJs(f.role)}, ${quoteJs(nombre)}, ${String(Boolean(f.nameEquals))}${respaldo})`;
   }
   const texto = f.nameEquals ?? f.nameContains ?? "";
   return `await locateText(${quoteJs(texto)}, ${String(Boolean(f.nameEquals))})`;
@@ -133,6 +261,12 @@ function stepCodeStandalone(step: FlowStep, index: number): string[] {
   const comentario = `  // ${step.label ?? step.action}`;
   if (step.action === "goto") {
     return [comentario, `  await page.goto(${quoteJs(step.target)});`];
+  }
+  if (step.action === "waitForStable") {
+    return [
+      `${comentario} — espera a que el DOM deje de cambiar (ADR-0005)`,
+      `  await waitForStable(${step.quietMs ?? 500}, ${step.timeoutMs ?? 15000});`,
+    ];
   }
 
   const objetivo = `el${index}`;
@@ -217,6 +351,12 @@ function stepCode(step: FlowStep): string[] {
   switch (step.action) {
     case "goto":
       return [comentario, `  await page.goto(${quoteJs(step.target)});`];
+
+    case "waitForStable":
+      return [
+        `${comentario} — espera a que el DOM deje de cambiar (ADR-0005)`,
+        `  await waitForStable(page, ${step.quietMs ?? 500}, ${step.timeoutMs ?? 15000});`,
+      ];
 
     case "waitFor":
       return [
@@ -319,11 +459,18 @@ export function generatePlaywrightTs(flow: Flow, options: PlaywrightOptions = {}
     "",
   ];
 
+  // El helper solo se emite si el flujo lo usa: un script generado no debe llevar código
+  // muerto que quien lo revise tenga que descartar.
+  const usaEstabilidad = flow.steps.some((step) => step.action === "waitForStable");
+
   if (options.asTest) {
     return [
       ...cabecera,
-      'import { test, expect } from "@playwright/test";',
+      usaEstabilidad
+        ? 'import { test, expect, type Page } from "@playwright/test";'
+        : 'import { test, expect } from "@playwright/test";',
       "",
+      ...(usaEstabilidad ? waitForStableHelper(true) : []),
       `test(${quoteJs(flow.name)}, async ({ page }) => {`,
       "  const datos: Record<string, string | null> = {};",
       ...cuerpo,
@@ -354,6 +501,7 @@ export function generatePlaywrightTs(flow: Flow, options: PlaywrightOptions = {}
     "",
     ...LOCATE_HELPER,
     ...STANDALONE_HELPERS,
+    ...(usaEstabilidad ? waitForStableHelper(false) : []),
     "try {",
     ...flow.steps.flatMap((step, index) => stepCodeStandalone(step, index)),
     "  console.log(JSON.stringify(datos, null, 2));",

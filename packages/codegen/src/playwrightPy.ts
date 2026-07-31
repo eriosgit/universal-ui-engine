@@ -31,6 +31,12 @@ function stepCode(step: FlowStep): string[] {
     case "goto":
       return [comentario, `    page.goto(${quotePy(step.target)})`];
 
+    case "waitForStable":
+      return [
+        `${comentario} — espera a que el DOM deje de cambiar (ADR-0005)`,
+        `    wait_for_stable(page, ${step.quietMs ?? 500}, ${step.timeoutMs ?? 15000})`,
+      ];
+
     case "waitFor":
       return [
         `${comentario} — espera por condición, no por tiempo fijo`,
@@ -112,7 +118,49 @@ function stepCode(step: FlowStep): string[] {
   return [comentario, "    # (paso no soportado por este generador)"];
 }
 
+/**
+ * `waitForStable` (ADR-0005) en Python. Misma semántica que en el target TS: "nada cambió
+ * en el DOM durante `quiet_ms` seguidos", medido con un `MutationObserver`, porque en el
+ * script generado no existe el árbol universal del motor.
+ */
+const WAIT_FOR_STABLE_PY = [
+  "def wait_for_stable(page, quiet_ms, timeout_ms):",
+  '    """Espera a que el DOM deje de cambiar durante quiet_ms seguidos."""',
+  "    page.evaluate(",
+  '        """([quiet, limite]) => new Promise((resolve, reject) => {',
+  "            let timer;",
+  "            let vencimiento;",
+  "            function listo() {",
+  "                observer.disconnect();",
+  "                clearTimeout(timer);",
+  "                clearTimeout(vencimiento);",
+  "                resolve();",
+  "            }",
+  "            const observer = new MutationObserver(() => {",
+  "                clearTimeout(timer);",
+  "                timer = setTimeout(listo, quiet);",
+  "            });",
+  "            vencimiento = setTimeout(() => {",
+  "                observer.disconnect();",
+  "                clearTimeout(timer);",
+  "                reject(new Error(",
+  "                    `El DOM siguió cambiando durante ${limite}ms sin quedarse quieto ${quiet}ms seguidos.`",
+  "                ));",
+  "            }, limite);",
+  "            observer.observe(document, {",
+  "                childList: true, subtree: true, attributes: true, characterData: true",
+  "            });",
+  "            timer = setTimeout(listo, quiet);",
+  '        })""",',
+  "        [quiet_ms, timeout_ms],",
+  "    )",
+  "",
+  "",
+];
+
 export function generatePlaywrightPy(flow: Flow, options: { headless?: boolean } = {}): string {
+  // Solo se emite si el flujo lo usa: nada de código muerto en el script generado.
+  const usaEstabilidad = flow.steps.some((step) => step.action === "waitForStable");
   return [
     "# Generado por `uui codegen` a partir de un flujo de Universal UI Engine.",
     `# Flujo: ${flow.name}${flow.description ? ` — ${flow.description}` : ""}`,
@@ -130,6 +178,7 @@ export function generatePlaywrightPy(flow: Flow, options: { headless?: boolean }
     'PROFILE_DIR = os.environ.get("UUI_PROFILE") or str(Path.home() / ".uui" / "profile")',
     "",
     "",
+    ...(usaEstabilidad ? WAIT_FOR_STABLE_PY : []),
     "def main():",
     "    datos = {}",
     "    with sync_playwright() as p:",

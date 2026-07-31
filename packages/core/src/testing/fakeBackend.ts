@@ -8,17 +8,24 @@ import type { ActionArgs, Locator, Verb } from "../types.js";
  * sin levantar Playwright.
  */
 export function createFakeBackend(options: {
-  tree: RawNode;
+  /**
+   * Árbol fijo, o una función que lo produce en cada `query()`. La forma de función existe
+   * porque un árbol real CAMBIA entre sondeos (una SPA que renderiza en varias etapas), y
+   * sin poder simular eso no se puede probar la espera por estabilidad (ADR-0005).
+   */
+  tree: RawNode | (() => RawNode);
   /** Locators que "existen" ahora mismo — simula el estado vivo del DOM/UIA. */
   liveLocators?: Set<string>;
   onPerform?: (locator: Locator, verb: Verb, args: ActionArgs | undefined) => void;
 }): Backend {
-  const live = options.liveLocators ?? new Set((options.tree.locators ?? []).map((l) => l.value));
+  const treeNow = (): RawNode =>
+    typeof options.tree === "function" ? options.tree() : options.tree;
+  const live = options.liveLocators ?? new Set((treeNow().locators ?? []).map((l) => l.value));
 
   return {
     id: "fake",
     async query(_region: BackendRegion): Promise<RawNode> {
-      return options.tree;
+      return treeNow();
     },
     async probeLocator(locator: Locator): Promise<boolean> {
       return live.has(locator.value);
@@ -35,6 +42,9 @@ export function createFakeBackend(options: {
 export function node(partial: Partial<RawNode> & Pick<RawNode, "role" | "nativeRole">): RawNode {
   return {
     name: null,
+    automationId: null,
+    description: null,
+    options: null,
     value: undefined,
     states: new Set(),
     bounds: null,

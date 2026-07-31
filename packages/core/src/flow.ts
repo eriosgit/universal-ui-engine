@@ -1,4 +1,10 @@
 import type { Predicate } from "./find.js";
+import {
+  DEFAULT_QUIET_MS,
+  realClock,
+  waitForQuiet,
+  type Clock,
+} from "./stability.js";
 import type { Session } from "./session.js";
 import type { UINode, Verb } from "./types.js";
 
@@ -14,6 +20,9 @@ import type { UINode, Verb } from "./types.js";
  * "lo que el modelo entendió ese día": por eso un flujo es versionable y revisable en un
  * PR como cualquier otro código.
  */
+
+/** Re-exportado: `runFlow` acepta un reloj inyectable y vivía aquí antes de ADR-0005. */
+export type { Clock };
 
 export type FlowStep =
   /** Lleva el backend al destino (Web: URL; UIA: app/ventana). Requiere `Backend.navigate`. */
@@ -36,6 +45,16 @@ export type FlowStep =
       timeoutMs?: number;
       label?: string;
     }
+  /**
+   * Espera a que el árbol deje de cambiar durante `quietMs` seguidos (ADR-0005).
+   *
+   * Es la espera para las SPA que renderizan en VARIAS ETAPAS. `waitFor` no sirve ahí:
+   * se cumple en la primera etapa, y actuar entonces deja el formulario a medio
+   * inicializar — el clic se aplica, pero los campos derivados nunca se recalculan. Y a
+   * menudo no hay nada que nombrar: lo que aparece en la segunda etapa puede no tener
+   * nombre accesible, así que no existe un predicado que esperar.
+   */
+  | { action: "waitForStable"; quietMs?: number; timeoutMs?: number; label?: string }
   /** Ejecuta un verbo sobre el primer nodo que satisface el predicado. */
   | { action: "act"; target: Predicate; verb: Verb; value?: string; label?: string }
   /** Validación: si falla, el flujo se detiene. Es lo que convierte un script en una
@@ -81,23 +100,6 @@ export type FlowResult = {
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 const POLL_INTERVAL_MS = 300;
-
-/** Reloj inyectable: los tests no deben esperar segundos reales. */
-export type Clock = { now(): number; sleep(ms: number): Promise<void> };
-
-const realClock: Clock = {
-  now: () => Date.now(),
-  // `globalThis.setTimeout` en vez de `setTimeout` a secas: `core` no declara los tipos de
-  // Node ni los del DOM (es agnóstico de entorno por diseño), pero el temporizador existe
-  // en ambos y está estandarizado en el objeto global.
-  sleep: (ms) =>
-    new Promise((resolve) => {
-      const timer = (globalThis as unknown as {
-        setTimeout: (fn: () => void, ms: number) => unknown;
-      }).setTimeout;
-      timer(() => resolve(), ms);
-    }),
-};
 
 /**
  * Espera por CONDICIÓN, nunca por tiempo fijo. Reintenta hasta que el predicado encuentre
@@ -161,6 +163,8 @@ function describe(step: FlowStep): string {
       return "waitFor";
     case "waitForValue":
       return "waitForValue";
+    case "waitForStable":
+      return "waitForStable";
     case "act":
       return `act ${step.verb}`;
     case "expect":
@@ -213,6 +217,18 @@ async function runStep(
           step.expect === "equals"
             ? `El campo no llegó a valer "${esperado}" tras ${step.timeoutMs ?? timeoutMs}ms.`
             : `El campo siguió vacío tras ${step.timeoutMs ?? timeoutMs}ms.`,
+        );
+      }
+      return {};
+    }
+
+    case "waitForStable": {
+      const quietMs = step.quietMs ?? DEFAULT_QUIET_MS;
+      const plazo = step.timeoutMs ?? timeoutMs;
+      const quieto = await waitForQuiet(() => session.shapeFingerprint(), quietMs, plazo, clock);
+      if (!quieto) {
+        throw new Error(
+          `El árbol siguió cambiando durante ${plazo}ms sin quedarse quieto ${quietMs}ms seguidos.`,
         );
       }
       return {};

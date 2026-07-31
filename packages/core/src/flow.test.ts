@@ -180,3 +180,79 @@ describe("runFlow (F3 — el artefacto que corre sin IA)", () => {
     expect(result.steps[0]?.error).toMatch(/no implementa navigate/);
   });
 });
+
+/**
+ * ADR-0005. El caso que motivó el paso: una SPA que renderiza el formulario en dos etapas.
+ * Esperar a que un campo sea VISIBLE se cumple en la primera etapa, y actuar ahí deja el
+ * formulario a medio inicializar. Aquí se simula con un árbol que crece entre sondeos.
+ */
+describe("waitForStable — esperar a que el árbol deje de cambiar", () => {
+  /** Árbol que gana un campo nuevo en cada uno de los primeros `etapas` sondeos. */
+  function arbolQueCrece(etapas: number): { tree: () => RawNode; sondeos: () => number } {
+    let n = 0;
+    return {
+      tree: () => {
+        const campos = Array.from({ length: Math.min(n, etapas) }, (_, i) =>
+          boton(`Campo ${i + 1}`, `c${i + 1}`),
+        );
+        n += 1;
+        return node({ role: "form", nativeRole: "form", children: [boton("Nombre"), ...campos] });
+      },
+      sondeos: () => n,
+    };
+  }
+
+  it("no vuelve hasta que la forma del árbol se repite durante toda la ventana de silencio", async () => {
+    const { tree } = arbolQueCrece(3);
+    const session = new Session(createFakeBackend({ tree }));
+
+    const result = await runFlow(
+      session,
+      {
+        name: "estable",
+        steps: [{ action: "waitForStable", quietMs: 600, timeoutMs: 10_000 }],
+      },
+      { clock: fakeClock() },
+    );
+
+    expect(result.status).toBe("ok");
+    // El árbol dejó de crecer en el sondeo 3; la ventana de 600ms son 2 sondeos más de
+    // 300ms sin cambios. Volver antes significaría actuar sobre un árbol a medio renderizar.
+    expect(result.steps[0]?.durationMs).toBeGreaterThanOrEqual(600);
+  });
+
+  it("falla con un mensaje accionable si el árbol nunca se aquieta", async () => {
+    // Árbol que cambia para siempre: una animación o un contador visible en la página.
+    const { tree } = arbolQueCrece(Number.MAX_SAFE_INTEGER);
+    const session = new Session(createFakeBackend({ tree }));
+
+    const result = await runFlow(
+      session,
+      {
+        name: "inquieto",
+        steps: [{ action: "waitForStable", quietMs: 500, timeoutMs: 2000 }],
+      },
+      { clock: fakeClock() },
+    );
+
+    expect(result.status).toBe("failed");
+    expect(result.steps[0]?.error).toMatch(/sigui[óo] cambiando/i);
+  });
+
+  it("vuelve enseguida si el árbol ya estaba quieto", async () => {
+    const session = new Session(
+      createFakeBackend({
+        tree: node({ role: "form", nativeRole: "form", children: [boton("Nombre")] }),
+      }),
+    );
+
+    const result = await runFlow(
+      session,
+      { name: "quieto", steps: [{ action: "waitForStable", quietMs: 300 }] },
+      { clock: fakeClock() },
+    );
+
+    expect(result.status).toBe("ok");
+    expect(result.steps[0]?.durationMs).toBeLessThanOrEqual(600);
+  });
+});
