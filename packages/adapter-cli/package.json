@@ -1,0 +1,23 @@
+{
+  "name": "@uui/adapter-cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CLI (`uui`) — bucle de depuración del agente contra @uui/core. Ver §5.2 del plan: sustituye deliberadamente a un MCP de navegador.",
+  "type": "module",
+  "bin": {
+    "uui": "./dist/src/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@uui/backend-web": "workspace:*",
+    "@uui/core": "workspace:*",
+    "commander": "^15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "~6.0.3"
+  }
+}
