@@ -182,6 +182,28 @@ export function runInPage(args: PageArgs): PageResult {
       }
       const closestLabel = el.closest("label");
       if (closestLabel?.textContent?.trim()) return closestLabel.textContent.trim();
+
+      // Label VISUAL no vinculado: muchísimas apps reales (medido en un SaaS de
+      // facturación) pintan `<div><label>Nombre*</label><input/></div>` sin `for`/`id`.
+      // Un lector de pantalla tampoco lo asocia — es un defecto de accesibilidad de la
+      // app — pero el label existe y es exactamente el nombre por el que un humano (y un
+      // agente) llama al campo. Sin esto, formularios enteros son inalcanzables por
+      // nombre y el motor deja de servir justo donde más valdría.
+      //
+      // Acotado a propósito para no robar el label de un campo vecino: se sube como
+      // máximo 3 ancestros, y solo se acepta si ese ancestro contiene UN único label y
+      // UN único control.
+      let ancestor: Element | null = el.parentElement;
+      for (let depth = 0; depth < 3 && ancestor; depth++) {
+        const labels = ancestor.querySelectorAll("label");
+        const controls = ancestor.querySelectorAll("input, textarea, select");
+        if (labels.length === 1 && controls.length === 1) {
+          const text = labels[0]?.textContent?.trim();
+          if (text) return text;
+        }
+        ancestor = ancestor.parentElement;
+      }
+
       const placeholder = el.getAttribute("placeholder");
       if (placeholder?.trim()) return placeholder.trim();
       return null;

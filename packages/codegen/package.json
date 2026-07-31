@@ -1,0 +1,21 @@
+{
+  "name": "@uui/codegen",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Generación de código a partir de un Flow: scripts autónomos (Playwright TS, Python) que corren sin @uui ni IA. F3 del plan.",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@uui/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

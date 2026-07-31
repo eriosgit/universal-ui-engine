@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@uui/backend-web": "workspace:*",
+    "@uui/codegen": "workspace:*",
     "@uui/core": "workspace:*",
     "commander": "^15.0.0"
   },

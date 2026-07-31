@@ -24,6 +24,11 @@ type SessionEntry = { fingerprint: Fingerprint; supports: Verb[] };
  * de Playwright, una ventana UIA…). El adaptador MCP/CLI decide cuántas sesiones abrir.
  */
 export class Session {
+  /** Expuesto para el ejecutor de flujos (`runFlow`), que necesita `navigate()` — la
+   * única capacidad del backend que no pasa por un nodo del árbol. */
+  get backend(): Backend {
+    return this.backendRef;
+  }
   private readonly nodes = new Map<string, SessionEntry>();
   private counter = 0;
   /** Firmas de nodos hoja ya enviadas al consumidor en snapshots anteriores. Es lo que
@@ -31,11 +36,11 @@ export class Session {
    * pantalla — ver `collapseSeenChrome` en serialize.ts (ADR-0003). */
   private readonly seenSignatures = new Set<string>();
 
-  constructor(private readonly backend: Backend) {}
+  constructor(private readonly backendRef: Backend) {}
 
   private mintUid(): string {
     this.counter += 1;
-    return `${this.backend.id}:${this.counter}`;
+    return `${this.backendRef.id}:${this.counter}`;
   }
 
   /** Asigna uid + registra fingerprint/supports para cada nodo del árbol crudo. La ruta
@@ -88,7 +93,7 @@ export class Session {
   async snapshot(options: SnapshotOptions = {}): Promise<Snapshot> {
     const { mode = "compact", ...region } = options;
     const backendRegion = await this.resolveRegion(region);
-    const raw = await this.backend.query(backendRegion);
+    const raw = await this.backendRef.query(backendRegion);
     const root = this.register(raw, []);
     const { root: serialized, tokenEstimate } = serialize(root, mode, this.seenSignatures);
     // Registrar DESPUÉS de serializar, y sobre el árbol SERIALIZADO, no el crudo: "ya lo
@@ -121,7 +126,7 @@ export class Session {
    */
   async find(predicate: Predicate, region: Region = {}): Promise<UINode[]> {
     const backendRegion = await this.resolveRegion(region);
-    const raw = await this.backend.query(backendRegion);
+    const raw = await this.backendRef.query(backendRegion);
     const root = this.register(raw, []);
     return findInTree(root, predicate).map((match) => stripInternalFields(match.node));
   }
@@ -153,6 +158,6 @@ export class Session {
   }
 
   async dispose(): Promise<void> {
-    await this.backend.dispose();
+    await this.backendRef.dispose();
   }
 }

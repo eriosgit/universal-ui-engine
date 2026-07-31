@@ -1,0 +1,82 @@
+{
+  "name": "alegra-crear-servicio",
+  "description": "Crea un ítem de venta tipo Servicio en Alegra y valida que quedó en la lista. Descubierto con `uui find` contra la app real; se ejecuta sin IA.",
+  "defaultTimeoutMs": 20000,
+  "steps": [
+    { "action": "goto", "target": "https://app.alegra.com/item", "label": "Abrir ítems de venta" },
+    {
+      "action": "waitFor",
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "button" }, { "kind": "nameEquals", "text": "Nuevo producto de venta" }] },
+      "label": "Esperar a que cargue la lista (SPA)"
+    },
+    {
+      "action": "act",
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "button" }, { "kind": "nameEquals", "text": "Nuevo producto de venta" }] },
+      "verb": "invoke",
+      "label": "Abrir el formulario"
+    },
+    {
+      "action": "waitFor",
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "textbox" }, { "kind": "nameEquals", "text": "Nombre" }] },
+      "label": "Esperar a que el modal termine de renderizar sus campos"
+    },
+    {
+      "action": "act",
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "button" }, { "kind": "nameEquals", "text": "Servicio" }] },
+      "verb": "invoke",
+      "label": "Elegir tipo Servicio"
+    },
+    {
+      "action": "waitForValue",
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "textbox" }, { "kind": "nameEquals", "text": "Unidad de medida" }] },
+      "expect": "nonEmpty",
+      "timeoutMs": 15000,
+      "label": "Esperar a que la app autocomplete la Unidad de medida al elegir el tipo"
+    },
+    {
+      "action": "act",
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "textbox" }, { "kind": "nameEquals", "text": "Nombre" }] },
+      "verb": "setValue",
+      "value": "Mantenimiento preventivo trimestral",
+      "label": "Escribir el nombre del servicio"
+    },
+    {
+      "action": "act",
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "textbox" }, { "kind": "nameEquals", "text": "Precio base" }] },
+      "verb": "setValue",
+      "value": "780000",
+      "label": "Escribir el precio base"
+    },
+    {
+      "action": "waitForValue",
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "textbox" }, { "kind": "nameEquals", "text": "Precio Total" }] },
+      "expect": "nonEmpty",
+      "timeoutMs": 10000,
+      "label": "Esperar a que la app calcule el Precio Total (campo derivado)"
+    },
+    {
+      "action": "act",
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "button" }, { "kind": "nameEquals", "text": "Crear producto" }] },
+      "verb": "invoke",
+      "label": "Guardar"
+    },
+    {
+      "action": "expect",
+      "target": { "kind": "nameContains", "text": "obligatorio" },
+      "assert": "notExists",
+      "label": "Validar que no hubo errores de campos obligatorios"
+    },
+    {
+      "action": "expect",
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "link" }, { "kind": "nameEquals", "text": "Mantenimiento preventivo trimestral" }] },
+      "assert": "exists",
+      "label": "Validar que el servicio aparece en la lista"
+    },
+    {
+      "action": "extract",
+      "name": "servicioCreado",
+      "target": { "kind": "and", "all": [{ "kind": "role", "role": "link" }, { "kind": "nameEquals", "text": "Mantenimiento preventivo trimestral" }] },
+      "label": "Capturar el nombre del servicio creado"
+    }
+  ]
+}

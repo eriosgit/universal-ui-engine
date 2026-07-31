@@ -3,6 +3,7 @@
   "references": [
     { "path": "packages/core" },
     { "path": "packages/backend-web" },
+    { "path": "packages/codegen" },
     { "path": "packages/adapter-cli" },
     { "path": "packages/adapter-mcp" }
   ]

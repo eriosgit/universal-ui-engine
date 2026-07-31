@@ -135,6 +135,38 @@ vez — cierra el navegador de `login` antes de escanear. Nota: algunos proveedo
 SSO (p. ej. "Iniciar sesión con Google") pueden rechazar navegadores automatizados;
 si la app lo permite, usa su login de usuario/contraseña propio.
 
+### El ciclo completo: descubrir una vez, automatizar siempre
+
+Ese es el objetivo del proyecto. La IA hace el trabajo caro **una sola vez** y lo que
+queda es código normal:
+
+```bash
+# 1. La IA explora la app con la CLI y descubre cómo se llaman los controles
+pnpm uui find "https://miapp.com/facturas" "Nueva factura" --role button
+
+# 2. Escribe un FLUJO declarativo (JSON versionable, revisable en un PR)
+#    → ver examples/alegra-crear-servicio.flow.json
+
+# 3. Se ejecuta sin IA y sin tokens, con validaciones
+pnpm uui run mi-flujo.flow.json
+#    OK  [ 0] Abrir ítems de venta (461ms)
+#    ...
+#    OK en 8622ms   { "servicioCreado": "Soporte técnico mensual" }
+
+# 4. Se genera código autónomo (no depende de uui ni de una IA)
+pnpm uui codegen mi-flujo.flow.json --target playwright-ts  --out automatizacion.ts
+pnpm uui codegen mi-flujo.flow.json --target playwright-test --out flujo.spec.ts
+pnpm uui codegen mi-flujo.flow.json --target playwright-py   --out automatizacion.py
+```
+
+Un flujo se compone de pasos deterministas: `goto`, `waitFor`, `waitForValue` (para
+campos derivados que la app calcula sola), `act`, `expect` (validaciones — sin ellas un
+flujo "termina bien" habiendo hecho nada) y `extract` (capturar datos del resultado).
+Las esperas son **por condición, nunca por tiempo fijo**, que es lo que hace que la
+automatización no sea intermitente. Ver
+[`ADR-0004`](docs/adr/ADR-0004-flujos-y-generacion-de-codigo.md), incluida su limitación
+conocida sobre formularios con labels no vinculados.
+
 ### CLI (`uui`) — para desarrollar y depurar el motor
 
 La CLI existe para quien trabaja EN el motor (o quiere ver crudo lo que el agente ve),
@@ -184,6 +216,7 @@ references, el typecheck de `backend-web`/`adapter-*` necesita los `.d.ts` emiti
 | [`docs/adr/ADR-0001-modelo-universal.md`](docs/adr/ADR-0001-modelo-universal.md) | El Modelo Universal de UI: qué es un `uid`, roles canónicos, poda de decorativos, coordenadas — con las alternativas descartadas y los bugs reales que ajustaron el diseño |
 | [`docs/adr/ADR-0002-contrato-backend.md`](docs/adr/ADR-0002-contrato-backend.md) | El contrato core↔Backend: regiones perezosas, verbos por nodo, y por qué `if (backend === 'x')` es estructuralmente imposible |
 | [`docs/adr/ADR-0003-presupuesto-de-tokens.md`](docs/adr/ADR-0003-presupuesto-de-tokens.md) | Por qué un snapshot costaba 6.811 tokens en una pantalla vacía y qué se hizo: modo `actionable`, colapso de envoltorios y resumen del cromo persistente — con lo medido y lo que aún falta |
+| [`docs/adr/ADR-0004-flujos-y-generacion-de-codigo.md`](docs/adr/ADR-0004-flujos-y-generacion-de-codigo.md) | Flujos declarativos, esperas por condición, validaciones y generación de código autónomo — el ciclo "descubrir una vez, ejecutar siempre", con sus resultados medidos y su limitación conocida |
 | [`docs/specs/`](docs/specs/) | Una spec por unidad de trabajo, con criterios de aceptación y evidencia |
 | [`CLAUDE.md`](CLAUDE.md) | Flujo de trabajo para agentes de IA que desarrollan en este repo |
 

@@ -76,6 +76,40 @@ describe("find (D7 — determinista y componible)", () => {
     expect(new Set(matches.map((m) => m.node.uid)).size).toBe(20);
   });
 
+  it("nameEquals distingue el campo de un formulario de la caja de búsqueda que lo menciona", () => {
+    // Regresión de un fallo real: al crear un ítem en un SaaS de facturación,
+    // nameContains:"Nombre" coincidió primero con "Buscar por nombre o referencia" y el
+    // agente escribió en el buscador en vez del campo, enviando el formulario vacío.
+    const root = makeNode({
+      uid: "root",
+      role: "form",
+      children: [
+        makeNode({ uid: "buscador", role: "textbox", name: "Buscar por nombre o referencia" }),
+        makeNode({ uid: "campo", role: "textbox", name: "Nombre*" }),
+      ],
+    });
+
+    expect(find(root, { kind: "nameContains", text: "Nombre" }).map((m) => m.node.uid)).toEqual([
+      "buscador",
+      "campo",
+    ]);
+    // Exacto: solo el campo. Y tolera el '*' de obligatoriedad del label.
+    expect(find(root, { kind: "nameEquals", text: "Nombre" }).map((m) => m.node.uid)).toEqual([
+      "campo",
+    ]);
+  });
+
+  it("nameEquals normaliza espacios y mayúsculas, pero no hace coincidencias parciales", () => {
+    const root = makeNode({
+      uid: "root",
+      role: "form",
+      children: [makeNode({ uid: "a", role: "textbox", name: "  Precio   Base  " })],
+    });
+
+    expect(find(root, { kind: "nameEquals", text: "precio base" }).map((m) => m.node.uid)).toEqual(["a"]);
+    expect(find(root, { kind: "nameEquals", text: "Precio" })).toHaveLength(0);
+  });
+
   it("cada match trae el predicado que lo produjo — la explicación que D7 exige para F3", () => {
     const root = makeNode({ uid: "root", role: "button", name: "Guardar" });
     const predicate = { kind: "role" as const, role: "button" as const };

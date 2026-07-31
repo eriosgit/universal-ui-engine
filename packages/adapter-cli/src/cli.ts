@@ -1,7 +1,9 @@
 #!/usr/bin/env node
+import { readFile, writeFile } from "node:fs/promises";
 import { Command } from "commander";
-import { Session, type Predicate, type Verb } from "@uui/core";
+import { Session, runFlow, type Flow, type Predicate, type Verb } from "@uui/core";
 import { WebBackend, defaultProfileDir, openPersistentContext } from "@uui/backend-web";
+import { TARGETS, extensionFor, generate, type Target } from "@uui/codegen";
 
 /**
  * `uui` — el bucle de depuración del agente contra @uui/core (§5.2 del plan: sustituye
@@ -165,6 +167,69 @@ program
       printJson(result);
     },
   );
+
+program
+  .command("run")
+  .description(
+    "Ejecuta un flujo (.json) SIN IA: pasos deterministas, esperas por condición y " +
+      "validaciones. Es el artefacto que produce el trabajo de descubrimiento.",
+  )
+  .argument("<flow>", "ruta a un archivo de flujo .json")
+  .option("--headed", "abrir el navegador visible en vez de headless", false)
+  .option("--clean", "navegador limpio, sin el perfil persistente", false)
+  .option("--profile <dir>", "directorio de perfil (por defecto ~/.uui/profile)")
+  .action(async (flowPath: string, opts: BrowserOpts) => {
+    const flow = JSON.parse(await readFile(flowPath, "utf8")) as Flow;
+    const primerGoto = flow.steps.find((s) => s.action === "goto");
+    if (!primerGoto) {
+      throw new Error(
+        "El flujo debe empezar con un paso 'goto': la CLI necesita saber a dónde abrir el navegador.",
+      );
+    }
+
+    const result = await withSession(primerGoto.target, opts, (session) => runFlow(session, flow));
+
+    for (const step of result.steps) {
+      const icono = step.status === "ok" ? "OK  " : "FALLA";
+      const etiqueta = step.step.label ?? step.step.action;
+      process.stderr.write(
+        `${icono} [${String(step.index).padStart(2)}] ${etiqueta} (${step.durationMs}ms)` +
+          `${step.error ? `\n      ${step.error}` : ""}\n`,
+      );
+    }
+    process.stderr.write(`\n${result.status.toUpperCase()} en ${result.durationMs}ms\n`);
+    printJson({ status: result.status, data: result.data });
+    if (result.status === "failed") process.exitCode = 1;
+  });
+
+program
+  .command("codegen")
+  .description(
+    "Genera código AUTÓNOMO a partir de un flujo: un script que corre sin uui y sin IA. " +
+      "Este es el producto final del ciclo (la IA descubre una vez; el código corre siempre).",
+  )
+  .argument("<flow>", "ruta a un archivo de flujo .json")
+  .option("-t, --target <target>", `uno de: ${TARGETS.join(" | ")}`, "playwright-ts")
+  .option("-o, --out <file>", "escribir a un archivo (por defecto: stdout)")
+  .option("--headed", "el script generado abre el navegador visible", false)
+  .action(async (flowPath: string, opts: { target: string; out?: string; headed: boolean }) => {
+    if (!(TARGETS as readonly string[]).includes(opts.target)) {
+      throw new Error(`Target desconocido: '${opts.target}'. Opciones: ${TARGETS.join(", ")}`);
+    }
+    const flow = JSON.parse(await readFile(flowPath, "utf8")) as Flow;
+    const code = generate(flow, opts.target as Target, { headless: !opts.headed });
+    if (opts.out) {
+      // Si el nombre no trae extensión, se sugiere la del target; si ya la trae, se
+      // respeta tal cual (antes se concatenaba y salía "gen.py.py").
+      const destino = /\.[a-z]+$/i.test(opts.out)
+        ? opts.out
+        : `${opts.out}${extensionFor(opts.target as Target)}`;
+      await writeFile(destino, code, "utf8");
+      process.stderr.write(`Escrito: ${destino}\n`);
+    } else {
+      process.stdout.write(code);
+    }
+  });
 
 program.parseAsync(process.argv).catch((error: unknown) => {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);

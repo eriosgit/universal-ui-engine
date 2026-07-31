@@ -165,6 +165,11 @@ export class WebBackend implements Backend {
     }
   }
 
+  /** Contrato opcional (ADR-0004): para un backend web, "navegar" es ir a una URL. */
+  async navigate(target: string): Promise<void> {
+    await this.page.goto(target);
+  }
+
   async dispose(): Promise<void> {
     if (this.browser) {
       await this.browser.close();

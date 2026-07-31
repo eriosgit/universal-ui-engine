@@ -91,17 +91,29 @@ server.registerTool(
       "expone locators internos (D1).",
     inputSchema: {
       target: z.string().describe("URL http:// o file:// del documento a inspeccionar"),
-      nameContains: z.string().optional().describe("el nombre accesible debe contener este texto"),
+      nameContains: z
+        .string()
+        .optional()
+        .describe("el nombre accesible CONTIENE este texto — para explorar"),
+      nameEquals: z
+        .string()
+        .optional()
+        .describe(
+          "el nombre accesible es EXACTAMENTE este (ignora mayúsculas, espacios sobrantes y el " +
+            "'*' de campo obligatorio). Úsalo siempre que vayas a ACTUAR sobre un campo concreto: " +
+            "'Nombre' con nameContains también casa con 'Buscar por nombre o referencia'.",
+        ),
       role: RoleEnum.optional().describe("role canónico exacto"),
     },
   },
-  async ({ target, nameContains, role }) => {
+  async ({ target, nameContains, nameEquals, role }) => {
     const session = await getSession(target);
     const clauses: Predicate[] = [];
     if (role) clauses.push({ kind: "role", role });
+    if (nameEquals) clauses.push({ kind: "nameEquals", text: nameEquals });
     if (nameContains) clauses.push({ kind: "nameContains", text: nameContains });
     if (clauses.length === 0) {
-      throw new Error("ui.find requiere al menos uno de: role, nameContains.");
+      throw new Error("ui.find requiere al menos uno de: role, nameEquals, nameContains.");
     }
     const predicate: Predicate = clauses.length === 1 ? clauses[0]! : { kind: "and", all: clauses };
     const matches = await session.find(predicate);
