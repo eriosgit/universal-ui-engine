@@ -1,0 +1,23 @@
+{
+  "name": "@uui/backend-web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Backend Web para @uui/core, implementado con Playwright.",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@uui/core": "workspace:*",
+    "playwright": "^1.62.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

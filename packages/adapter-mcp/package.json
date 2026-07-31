@@ -1,0 +1,25 @@
+{
+  "name": "@uui/adapter-mcp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Servidor MCP (stdio) con exactamente 3 herramientas: ui.snapshot, ui.find, ui.act. Traducción fina sobre @uui/core — sin lógica propia.",
+  "type": "module",
+  "bin": {
+    "uui-mcp": "./dist/src/server.js"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@uui/backend-web": "workspace:*",
+    "@uui/core": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

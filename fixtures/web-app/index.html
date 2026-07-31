@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>UUI — App de referencia</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; }
+      /* Estas envolturas son deliberadamente ruido de maquetación (sin nombre accesible,
+         sin interacción): ejercitan la poda + reparenting de D4 en la suite de
+         conformidad y en los golden trees. */
+      .decorative-shell { display: contents; }
+      table { border-collapse: collapse; }
+      td, th { border: 1px solid #ccc; padding: 0.25rem 0.5rem; }
+    </style>
+  </head>
+  <body>
+    <div class="decorative-shell">
+      <div class="decorative-shell">
+        <main aria-label="Panel principal">
+          <section aria-labelledby="login-heading">
+            <h1 id="login-heading">Iniciar sesión</h1>
+            <form id="login-form" data-testid="login-form">
+              <div class="decorative-shell">
+                <label for="username">Usuario</label>
+                <input id="username" name="username" type="text" data-testid="login-username" />
+              </div>
+              <div class="decorative-shell">
+                <label for="password">Contraseña</label>
+                <input id="password" name="password" type="password" data-testid="login-password" />
+              </div>
+              <button id="login-submit" type="submit" data-testid="login-submit">Entrar</button>
+              <p id="login-status" role="status" aria-live="polite"></p>
+            </form>
+          </section>
+
+          <section aria-labelledby="customers-heading">
+            <h2 id="customers-heading">Clientes</h2>
+            <table data-testid="customers-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <!-- 20 filas generadas por app.js, cada botón "Editar" con el MISMO nombre
+                   accesible y SIN data-testid propio a propósito: ejercita que D1 no
+                   colisiona donde un hash de propiedades sí lo haría (ver
+                   resolver.ts/DEGRADATION_TIERS — cada fila solo puede diferenciarse por
+                   un locator estructural, css/xpath). -->
+              <tbody id="customers-body"></tbody>
+            </table>
+          </section>
+
+          <section aria-labelledby="live-heading">
+            <h2 id="live-heading">Sección en vivo</h2>
+            <!-- Se regenera por completo (nodos DOM nuevos + clase CSS distinta) al
+                 pulsar "Regenerar", para ejercitar la re-resolución de fingerprints
+                 (D1) que anticipa la demo de F1. Disparo manual y determinista — nada
+                 de temporizadores, para no meter no-determinismo en CI. -->
+            <div id="live-region" class="theme-a" data-testid="live-region">
+              <span id="live-counter">0</span>
+              <button id="live-toggle" data-testid="live-toggle" aria-pressed="false">
+                Act/Desact
+              </button>
+            </div>
+            <button id="live-regenerate" data-testid="live-regenerate">Regenerar</button>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "name": "universal-ui-engine",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Núcleo + adaptadores para exploración y automatización universal de UI (Web, Windows UIA, SAP GUI…).",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:tokens": "vitest run packages/backend-web/test/tokens.test.ts",
+    "test:golden": "vitest run packages/backend-web/test/golden.test.ts",
+    "deps": "depcruise --config .dependency-cruiser.cjs packages",
+    "verify": "pnpm build && pnpm lint && pnpm deps && pnpm test"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
+    "dependency-cruiser": "^18.1.0",
+    "eslint": "^10.8.0",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.10"
+  },
+  "packageManager": "pnpm@11.9.0"
+}
