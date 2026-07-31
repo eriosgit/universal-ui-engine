@@ -108,7 +108,8 @@ program
   .command("login")
   .description(
     "Abre un navegador VISIBLE sobre el perfil persistente para que inicies sesión a mano. " +
-      "Cierra el navegador cuando termines; desde entonces snapshot/find/act ven tu sesión.",
+      "Cierra el navegador cuando termines; desde entonces `scan` (y el resto de comandos) " +
+      "ven TU sesión, no la página de login.",
   )
   .argument("<target>", "URL de la página de login (p. ej. https://app.alegra.com)")
   .option("--profile <dir>", "directorio de perfil (por defecto ~/.uui/profile)")
