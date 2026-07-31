@@ -1,5 +1,7 @@
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { rm } from "node:fs/promises";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
@@ -26,6 +28,10 @@ const SERVER_ENTRY = fileURLToPath(
   new URL("../dist/src/server.js", import.meta.url),
 );
 
+// Perfil DESECHABLE para la prueba: el servidor MCP usa por defecto el perfil
+// persistente del usuario (~/.uui/profile) — la suite no debe tocarlo ni depender de él.
+const TEST_PROFILE_DIR = join(tmpdir(), `uui-mcp-demo-profile-${process.pid}`);
+
 let client: Client;
 let transport: StdioClientTransport;
 
@@ -33,6 +39,7 @@ beforeAll(async () => {
   transport = new StdioClientTransport({
     command: process.execPath,
     args: [SERVER_ENTRY],
+    env: { ...process.env, UUI_PROFILE_DIR: TEST_PROFILE_DIR } as Record<string, string>,
   });
   client = new Client({ name: "demo-agent", version: "0.0.0" });
   await client.connect(transport);
@@ -40,6 +47,12 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await client.close();
+  // Limpieza best-effort: Chromium puede tardar unos ms en soltar los locks del perfil
+  // después de cerrar el proceso — reintentar, y si aun así no se puede, no es un fallo
+  // de la suite (es un directorio temporal del SO).
+  await rm(TEST_PROFILE_DIR, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 }).catch(
+    () => {},
+  );
 });
 
 function textOf(result: Awaited<ReturnType<Client["callTool"]>>): string {

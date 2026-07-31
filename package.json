@@ -8,6 +8,8 @@
     "node": ">=22"
   },
   "scripts": {
+    "uui": "node packages/adapter-cli/dist/src/cli.js",
+    "mcp": "node packages/adapter-mcp/dist/src/server.js",
     "build": "tsc -b",
     "typecheck": "tsc -b",
     "lint": "eslint .",

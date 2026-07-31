@@ -1,4 +1,6 @@
-import { chromium, type Browser, type Page } from "playwright";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import {
   normalizeAriaRole,
   type ActionArgs,
@@ -36,6 +38,38 @@ function toCoreLocator(pageLocator: { kind: string; value: string; confidence: n
 
 function toPageLocatorDescriptor(locator: Locator): { kind: string; value: string } {
   return { kind: locator.kind, value: locator.value };
+}
+
+export type { BrowserContext, Page };
+
+/** Perfil de navegador por defecto del motor: `~/.uui/profile`. Fuera del repo a
+ * propósito — contiene cookies y sesiones REALES del usuario; jamás debe versionarse. */
+export function defaultProfileDir(): string {
+  return process.env["UUI_PROFILE_DIR"] ?? join(homedir(), ".uui", "profile");
+}
+
+/**
+ * Abre un contexto de navegador PERSISTENTE sobre un directorio de perfil: cookies,
+ * localStorage y sesiones sobreviven entre ejecuciones. Es lo que resuelve el caso
+ * "para mí esta página es un dashboard, para el motor era un login": el usuario inicia
+ * sesión UNA vez (headed, vía `uui login`) y a partir de ahí cualquier página abierta
+ * sobre este perfil ve su sesión real.
+ *
+ * Un mismo perfil solo puede estar abierto por UN proceso a la vez (lock de Chromium):
+ * si el navegador de `uui login` sigue abierto, un segundo proceso sobre el mismo
+ * perfil fallará — cerrar el primero antes.
+ */
+export async function openPersistentContext(
+  profileDir: string = defaultProfileDir(),
+  options: { headless?: boolean } = {},
+): Promise<BrowserContext> {
+  const headless = options.headless ?? true;
+  return chromium.launchPersistentContext(profileDir, {
+    headless,
+    // En headed (login manual) la ventana se comporta como un navegador normal, sin
+    // viewport fijo emulado; en headless se mantiene el viewport por defecto.
+    viewport: headless ? undefined : null,
+  });
 }
 
 /**
