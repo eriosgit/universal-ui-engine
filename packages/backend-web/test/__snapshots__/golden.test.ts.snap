@@ -1,0 +1,1155 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot compact coincide con el árbol dorado versionado 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "name": "Iniciar sesión",
+              "role": "heading",
+            },
+            {
+              "children": [
+                {
+                  "children": [],
+                  "name": "Usuario",
+                  "role": "textbox",
+                },
+                {
+                  "children": [],
+                  "name": "Contraseña",
+                  "role": "textbox",
+                },
+                {
+                  "children": [],
+                  "name": "Entrar",
+                  "role": "button",
+                },
+                {
+                  "children": [],
+                  "name": null,
+                  "role": "status",
+                },
+              ],
+              "name": null,
+              "role": "form",
+            },
+          ],
+          "name": "Iniciar sesión",
+          "role": "region",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "name": "Clientes",
+              "role": "heading",
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Nombre",
+                      "role": "columnheader",
+                    },
+                    {
+                      "children": [],
+                      "name": "Acciones",
+                      "role": "columnheader",
+                    },
+                  ],
+                  "name": "Nombre Acciones",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 1",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 1Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 2",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 2Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 3",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 3Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 4",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 4Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 5",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 5Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 6",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 6Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 7",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 7Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 8",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 8Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 9",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 9Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 10",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 10Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 11",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 11Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 12",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 12Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 13",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 13Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 14",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 14Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 15",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 15Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 16",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 16Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 17",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 17Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 18",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 18Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 19",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 19Editar",
+                  "role": "row",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Cliente 20",
+                      "role": "cell",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": "Editar",
+                          "role": "button",
+                        },
+                      ],
+                      "name": "Editar",
+                      "role": "cell",
+                    },
+                  ],
+                  "name": "Cliente 20Editar",
+                  "role": "row",
+                },
+              ],
+              "name": null,
+              "role": "table",
+            },
+          ],
+          "name": "Clientes",
+          "role": "region",
+        },
+        {
+          "children": [
+            {
+              "children": [],
+              "name": "Sección en vivo",
+              "role": "heading",
+            },
+            {
+              "children": [],
+              "name": "Act/Desact",
+              "role": "button",
+            },
+            {
+              "children": [],
+              "name": "Regenerar",
+              "role": "button",
+            },
+          ],
+          "name": "Sección en vivo",
+          "role": "region",
+        },
+      ],
+      "name": "Panel principal",
+      "role": "main",
+    },
+  ],
+  "name": null,
+  "role": "generic",
+}
+`;
+
+exports[`Golden trees — fixtures/web-app > la forma normalizada del snapshot full (con decorativos) también coincide con su árbol dorado 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Iniciar sesión",
+                      "role": "heading",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "children": [],
+                              "name": null,
+                              "role": "generic",
+                            },
+                            {
+                              "children": [],
+                              "name": "Usuario",
+                              "role": "textbox",
+                            },
+                          ],
+                          "name": null,
+                          "role": "generic",
+                        },
+                        {
+                          "children": [
+                            {
+                              "children": [],
+                              "name": null,
+                              "role": "generic",
+                            },
+                            {
+                              "children": [],
+                              "name": "Contraseña",
+                              "role": "textbox",
+                            },
+                          ],
+                          "name": null,
+                          "role": "generic",
+                        },
+                        {
+                          "children": [],
+                          "name": "Entrar",
+                          "role": "button",
+                        },
+                        {
+                          "children": [],
+                          "name": null,
+                          "role": "status",
+                        },
+                      ],
+                      "name": null,
+                      "role": "form",
+                    },
+                  ],
+                  "name": "Iniciar sesión",
+                  "role": "region",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Clientes",
+                      "role": "heading",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Nombre",
+                                  "role": "columnheader",
+                                },
+                                {
+                                  "children": [],
+                                  "name": "Acciones",
+                                  "role": "columnheader",
+                                },
+                              ],
+                              "name": "Nombre Acciones",
+                              "role": "row",
+                            },
+                          ],
+                          "name": null,
+                          "role": "generic",
+                        },
+                        {
+                          "children": [
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 1",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 1Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 2",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 2Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 3",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 3Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 4",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 4Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 5",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 5Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 6",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 6Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 7",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 7Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 8",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 8Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 9",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 9Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 10",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 10Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 11",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 11Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 12",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 12Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 13",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 13Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 14",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 14Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 15",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 15Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 16",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 16Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 17",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 17Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 18",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 18Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 19",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 19Editar",
+                              "role": "row",
+                            },
+                            {
+                              "children": [
+                                {
+                                  "children": [],
+                                  "name": "Cliente 20",
+                                  "role": "cell",
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [],
+                                      "name": "Editar",
+                                      "role": "button",
+                                    },
+                                  ],
+                                  "name": "Editar",
+                                  "role": "cell",
+                                },
+                              ],
+                              "name": "Cliente 20Editar",
+                              "role": "row",
+                            },
+                          ],
+                          "name": null,
+                          "role": "generic",
+                        },
+                      ],
+                      "name": null,
+                      "role": "table",
+                    },
+                  ],
+                  "name": "Clientes",
+                  "role": "region",
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "name": "Sección en vivo",
+                      "role": "heading",
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "name": null,
+                          "role": "generic",
+                        },
+                        {
+                          "children": [],
+                          "name": "Act/Desact",
+                          "role": "button",
+                        },
+                      ],
+                      "name": null,
+                      "role": "generic",
+                    },
+                    {
+                      "children": [],
+                      "name": "Regenerar",
+                      "role": "button",
+                    },
+                  ],
+                  "name": "Sección en vivo",
+                  "role": "region",
+                },
+              ],
+              "name": "Panel principal",
+              "role": "main",
+            },
+          ],
+          "name": null,
+          "role": "generic",
+        },
+      ],
+      "name": null,
+      "role": "generic",
+    },
+    {
+      "children": [],
+      "name": null,
+      "role": "generic",
+    },
+  ],
+  "name": null,
+  "role": "generic",
+}
+`;
