@@ -1,6 +1,6 @@
 {
   "name": "uui-scan",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Escanea una pantalla (web hoy, escritorio después) y devuelve el catálogo de selectores: cada campo con su id, name, tipo, si es obligatorio y con qué selector alcanzarlo. CLI + servidor MCP.",
   "keywords": [
     "selectors",
