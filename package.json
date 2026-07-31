@@ -18,7 +18,8 @@
     "test:tokens": "vitest run packages/backend-web/test/tokens.test.ts",
     "test:golden": "vitest run packages/backend-web/test/golden.test.ts",
     "deps": "depcruise --config .dependency-cruiser.cjs packages",
-    "verify": "pnpm build && pnpm lint && pnpm deps && pnpm test"
+    "verify": "pnpm build && pnpm build:pkg && pnpm lint && pnpm deps && pnpm test",
+    "build:pkg": "pnpm --filter uui-scan build"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
