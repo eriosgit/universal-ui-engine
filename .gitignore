@@ -12,3 +12,6 @@ Thumbs.db
 !.env.example
 playwright-report/
 test-results/
+
+# Documento de estrategia interno — vive solo en local, no se versiona
+Plan_Desarrollo_Universal_UI_v2.md

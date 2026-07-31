@@ -2,7 +2,9 @@
 
 Lenguaje de dominio, invariantes y "cómo se hacen las cosas aquí". Este documento y
 `docs/adr/` son lo que hace que un agente (o una persona nueva) no reinvente decisiones
-cada sesión — ver Plan_Desarrollo_Universal_UI_v2.md §5.1.
+cada sesión. (Las citas "§N del plan" a lo largo del repo se refieren a
+`Plan_Desarrollo_Universal_UI_v2.md`, documento de estrategia interno que no se
+versiona — ver `.gitignore`.)
 
 ## Glosario
 

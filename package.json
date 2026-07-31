@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Núcleo + adaptadores para exploración y automatización universal de UI (Web, Windows UIA, SAP GUI…). Ver Plan_Desarrollo_Universal_UI_v2.md.",
+  "description": "Núcleo + adaptadores para exploración y automatización universal de UI (Web, Windows UIA, SAP GUI…).",
   "engines": {
     "node": ">=22"
   },

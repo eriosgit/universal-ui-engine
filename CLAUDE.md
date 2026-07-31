@@ -1,9 +1,11 @@
 # CLAUDE.md — Universal UI Engine
 
 Instrucciones operativas para trabajar en este repo. La fuente de verdad de la
-*estrategia* del proyecto es `Plan_Desarrollo_Universal_UI_v2.md`; el glosario y las
-invariantes de código están en `CONTEXT.md`; las decisiones congeladas en `docs/adr/`.
-Este archivo es el "cómo se trabaja aquí", no el "qué se está construyendo".
+*estrategia* del proyecto es `Plan_Desarrollo_Universal_UI_v2.md` — documento interno
+que vive SOLO en local (está en `.gitignore`, no se versiona); las citas tipo "§5.2 del
+plan" en los docs de este repo se refieren a él. El glosario y las invariantes de código
+están en `CONTEXT.md`; las decisiones congeladas en `docs/adr/`. Este archivo es el
+"cómo se trabaja aquí", no el "qué se está construyendo".
 
 ## Comandos
 
