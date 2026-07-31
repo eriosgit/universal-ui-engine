@@ -1,7 +1,15 @@
 #!/usr/bin/env node
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { Command } from "commander";
-import { Session, runFlow, type Flow, type Predicate, type Verb } from "@uui/core";
+import {
+  Session,
+  renderCatalogMarkdown,
+  runFlow,
+  type Flow,
+  type Predicate,
+  type Verb,
+} from "@uui/core";
 import { WebBackend, defaultProfileDir, openPersistentContext } from "@uui/backend-web";
 import { TARGETS, extensionFor, generate, type Target } from "@uui/codegen";
 
@@ -20,6 +28,28 @@ import { TARGETS, extensionFor, generate, type Target } from "@uui/codegen";
  * una invocación no sirve para otra — por eso `act` puede localizar su objetivo inline
  * (--find/--role) en vez de exigir un uid de un `snapshot` previo.
  */
+
+/**
+ * Nombre de archivo derivado de la URL: `https://app.com/auth/login` → `auth-login`.
+ * Sin esto, escanear tres pantallas de la misma app sobrescribe siempre el mismo archivo.
+ */
+function nombreDesdeTarget(target: string): string {
+  let ruta = target;
+  try {
+    ruta = new URL(target).pathname;
+  } catch {
+    // No era una URL absoluta (p. ej. una ruta de archivo): se usa tal cual.
+  }
+  const limpio = ruta
+    .replace(/\.[a-z0-9]+$/i, "")
+    .split("/")
+    .filter(Boolean)
+    .join("-")
+    .replace(/[^a-z0-9-]+/gi, "-")
+    .replace(/-+/g, "-")
+    .toLowerCase();
+  return limpio || "inicio";
+}
 
 function printJson(value: unknown): void {
   process.stdout.write(
@@ -59,8 +89,11 @@ async function withSession<T>(
 
 const program = new Command();
 program
-  .name("uui")
-  .description("Universal UI Engine — CLI de depuración contra @uui/core (backend-web en F0)");
+  .name("uui-scan")
+  .description(
+    "Escanea una pantalla y devuelve el catálogo de selectores. " +
+      "`uui-scan scan <url>` es el comando principal; el resto son utilidades del motor.",
+  );
 
 program
   .command("login")
@@ -116,6 +149,70 @@ program
         }),
       );
       printJson(snapshot);
+    },
+  );
+
+program
+  .command("scan")
+  .description(
+    "Escanea una pantalla y devuelve el CATÁLOGO DE SELECTORES: cada campo con su id, " +
+      "name, tipo, si es obligatorio y con qué selector alcanzarlo (ADR-0006).",
+  )
+  .argument("<target>", "URL http:// o file:// a escanear")
+  .option("-o, --out <dir>", "escribir <nombre>.json y <nombre>.md en este directorio")
+  .option("--name <name>", "nombre base de los archivos (por defecto, se deriva de la URL)")
+  .option("--format <fmt>", "md | json — qué imprimir por stdout si no se usa --out", "md")
+  .option(
+    "--quiet-ms <n>",
+    "ms que la pantalla debe estar sin cambiar antes de capturar (ADR-0005)",
+    (v) => Number.parseInt(v, 10),
+  )
+  .option("--no-wait", "capturar de inmediato, sin esperar a que la SPA se asiente")
+  .option("--filter-role <role>", "acotar el escaneo a una región por rol")
+  .option("--filter-name <text>", "acotar el escaneo a una región por nombre (contiene)")
+  .option("--headed", "abrir el navegador visible en vez de headless", false)
+  .option("--clean", "navegador limpio, sin el perfil persistente", false)
+  .option("--profile <dir>", "directorio de perfil (por defecto ~/.uui/profile)")
+  .action(
+    async (
+      target: string,
+      opts: {
+        out?: string;
+        name?: string;
+        format: "md" | "json";
+        quietMs?: number;
+        wait: boolean;
+        filterRole?: string;
+        filterName?: string;
+      } & BrowserOpts,
+    ) => {
+      const catalog = await withSession(target, opts, (session) =>
+        session.catalog({
+          target,
+          scannedAt: new Date().toISOString(),
+          // Por defecto se espera: un catálogo de una SPA a medio cargar sale corto y con
+          // apariencia de estar completo, que es peor que fallar.
+          stabilize: opts.wait === false ? false : { quietMs: opts.quietMs },
+          filter:
+            opts.filterRole || opts.filterName
+              ? { role: opts.filterRole as never, nameContains: opts.filterName }
+              : undefined,
+        }),
+      );
+
+      if (!opts.out) {
+        if (opts.format === "json") printJson(catalog);
+        else process.stdout.write(`${renderCatalogMarkdown(catalog)}\n`);
+        return;
+      }
+
+      const base = opts.name ?? nombreDesdeTarget(target);
+      await mkdir(opts.out, { recursive: true });
+      const rutaJson = join(opts.out, `${base}.json`);
+      const rutaMd = join(opts.out, `${base}.md`);
+      await writeFile(rutaJson, `${JSON.stringify(catalog, null, 2)}\n`, "utf8");
+      await writeFile(rutaMd, `${renderCatalogMarkdown(catalog)}\n`, "utf8");
+      process.stderr.write(`Escrito: ${rutaJson}\nEscrito: ${rutaMd}\n`);
     },
   );
 

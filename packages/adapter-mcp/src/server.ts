@@ -2,7 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { ROLES, Session, type Predicate } from "@uui/core";
+import { ROLES, Session, renderCatalogMarkdown, type Predicate } from "@uui/core";
 import {
   WebBackend,
   defaultProfileDir,
@@ -11,9 +11,13 @@ import {
 } from "@uui/backend-web";
 
 /**
- * Servidor MCP (stdio) — Parte C6 del plan de ejecución. EXACTAMENTE tres herramientas:
- * `ui.snapshot`, `ui.find`, `ui.act`. Traducción fina sobre `@uui/core` — cero lógica de
- * dominio propia (eso vive en `Session`/`resolver`/`serialize`, ya probado en `core`).
+ * Servidor MCP (stdio) — Parte C6 del plan de ejecución. Cuatro herramientas:
+ * `ui.snapshot`, `ui.scan`, `ui.find`, `ui.act`. Traducción fina sobre `@uui/core` — cero
+ * lógica de dominio propia (eso vive en `Session`/`resolver`/`serialize`/`catalog`, ya
+ * probado en `core`).
+ *
+ * `ui.scan` es la única que expone selectores, y la separación es deliberada (ADR-0006):
+ * reportar no es actuar. Las otras tres siguen devolviendo `uid` opacos.
  *
  * Sesiones de navegador: TODO corre sobre el perfil persistente (~/.uui/profile, o
  * UUI_PROFILE_DIR) — si el usuario ya inició sesión en una app (vía `uui login`), el
@@ -41,9 +45,13 @@ async function getSession(target: string): Promise<Session> {
   return session;
 }
 
+/** Lo inyecta esbuild al empaquetar `uui-scan` (ver build.mjs); en desarrollo, 0.0.0. */
+declare const __UUI_VERSION__: string | undefined;
+const PACKAGE_VERSION = typeof __UUI_VERSION__ === "string" ? __UUI_VERSION__ : "0.0.0";
+
 const RoleEnum = z.enum(ROLES);
 
-const server = new McpServer({ name: "uui-mcp", version: "0.0.0" });
+const server = new McpServer({ name: "uui-scan", version: PACKAGE_VERSION });
 
 server.registerTool(
   "ui.snapshot",
@@ -78,6 +86,59 @@ server.registerTool(
           : undefined,
     });
     return { content: [{ type: "text", text: JSON.stringify(snapshot, jsonReplacer) }] };
+  },
+);
+
+server.registerTool(
+  "ui.scan",
+  {
+    title: "Catálogo de selectores de una pantalla",
+    description:
+      "Escanea una pantalla y devuelve el CATÁLOGO DE SELECTORES para pegar en un " +
+      "proyecto: por cada campo su nombre, id, atributo name, tipo, si es obligatorio, " +
+      "sus opciones, y el selector recomendado con sus respaldos ordenados por " +
+      "confianza. Es la herramienta correcta cuando la pregunta es '¿cómo alcanzo este " +
+      "campo desde mi test/script?'. Para '¿qué puedo hacer aquí?' usa ui.snapshot, que " +
+      "cuesta mucho menos. A diferencia de snapshot/find, esto SÍ expone selectores " +
+      "(ADR-0006): son para reportar, no para actuar — para actuar usa el uid con ui.act.",
+    inputSchema: {
+      target: z.string().describe("URL http:// o file:// de la pantalla a escanear"),
+      format: z
+        .enum(["markdown", "json"])
+        .optional()
+        .default("markdown")
+        .describe("markdown para leerlo o pegarlo en un PR; json para procesarlo"),
+      quietMs: z
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .describe(
+          "ms que la pantalla debe estar sin cambiar antes de capturar. Por defecto 500: " +
+            "una SPA a medio cargar devuelve un catálogo corto que parece completo.",
+        ),
+      filterRole: RoleEnum.optional().describe("acotar el escaneo a una región por rol"),
+      filterNameContains: z.string().optional().describe("acotar la región por nombre"),
+    },
+  },
+  async ({ target, format, quietMs, filterRole, filterNameContains }) => {
+    const session = await getSession(target);
+    const catalog = await session.catalog({
+      target,
+      scannedAt: new Date().toISOString(),
+      // Sin esto, escanear una SPA devuelve lo que hubiera renderizado en ese instante:
+      // medido contra una app real, 960 nodos una vez y 207 la siguiente.
+      stabilize: { quietMs },
+      filter:
+        filterRole || filterNameContains
+          ? { role: filterRole, nameContains: filterNameContains }
+          : undefined,
+    });
+    const texto =
+      format === "json"
+        ? JSON.stringify(catalog, jsonReplacer, 2)
+        : renderCatalogMarkdown(catalog);
+    return { content: [{ type: "text", text: texto }] };
   },
 );
 

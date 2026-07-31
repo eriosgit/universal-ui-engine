@@ -2,7 +2,7 @@
   "name": "@uui/adapter-mcp",
   "version": "0.0.0",
   "private": true,
-  "description": "Servidor MCP (stdio) con exactamente 3 herramientas: ui.snapshot, ui.find, ui.act. Traducción fina sobre @uui/core — sin lógica propia.",
+  "description": "Servidor MCP (stdio) sobre @uui/core: ui.snapshot, ui.scan, ui.find, ui.act. Traducción fina — sin lógica propia.",
   "type": "module",
   "bin": {
     "uui-mcp": "./dist/src/server.js"

@@ -6,6 +6,9 @@ function makeNode(partial: Partial<UINode> & Pick<UINode, "uid" | "role">): UINo
   return {
     nativeRole: partial.role,
     name: null,
+    automationId: null,
+    description: null,
+    options: null,
     value: undefined,
     states: new Set(),
     bounds: { x: 0, y: 0, w: 10, h: 10 },

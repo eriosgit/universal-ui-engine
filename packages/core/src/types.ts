@@ -67,7 +67,16 @@ export const ROLES = [
 
 export type Role = (typeof ROLES)[number];
 
-export type State = "enabled" | "visible" | "focused" | "checked" | "expanded" | "readonly";
+/** `required` (ADR-0006) es un estado del control igual que `readonly`: web lo declara con
+ * `required`/`aria-required`, UIA con `IsRequiredForForm`. */
+export type State =
+  | "enabled"
+  | "visible"
+  | "focused"
+  | "checked"
+  | "expanded"
+  | "readonly"
+  | "required";
 
 /** D5: absoluto de escritorio, en píxeles físicos (DPI-aware), e INFORMATIVO — nunca la
  * fuente de verdad para actuar (eso lo decide el resolver vía locators, ver resolver.ts). */
@@ -76,6 +85,9 @@ export type Rect = { x: number; y: number; w: number; h: number };
 export type LocatorKind =
   | "automationId"
   | "testId"
+  /** Atributo de envío del campo (`[name=email]` en web). Es una forma de localizar, no un
+   * dato suelto (ADR-0006); los backends sin equivalente simplemente no lo emiten. */
+  | "attrName"
   | "role+name"
   | "css"
   | "xpath"
@@ -137,6 +149,16 @@ export type UINode = {
    * `ui.find` debe poder filtrar por él. */
   nativeRole: string;
   name: string | null;
+  /** Identificador estable declarado por la propia app: atributo `id` en web,
+   * `AutomationId` en UIA, id de control en SAP (ADR-0006). Es el dato que un
+   * desarrollador quiere pegar en su proyecto, así que es de primera clase, no `raw`. */
+  automationId: string | null;
+  /** Texto de ayuda del control: `placeholder`/`aria-describedby` en web, `HelpText` en
+   * UIA (ADR-0006). No es el nombre: describe, no identifica. */
+  description: string | null;
+  /** Opciones de un control de selección: `<option>` en web, `SelectionPattern` en UIA.
+   * `null` en los nodos que no seleccionan nada (ADR-0006). */
+  options: string[] | null;
   value?: string | null;
   states: Set<State>;
   /** Absoluto de pantalla, informativo (D5). `compact` lo omite. Se interpreta relativo

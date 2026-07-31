@@ -17,6 +17,7 @@ import { runInPage, type PageArgs, type PageRawNode, type PageResult } from "./p
 const KNOWN_LOCATOR_KINDS: readonly LocatorKind[] = [
   "automationId",
   "testId",
+  "attrName",
   "role+name",
   "css",
   "xpath",
@@ -83,6 +84,9 @@ function toRawNode(pageNode: PageRawNode): RawNode {
     role: normalizeAriaRole(pageNode.role),
     nativeRole: pageNode.role,
     name: pageNode.name,
+    automationId: pageNode.automationId,
+    description: pageNode.description,
+    options: pageNode.options,
     value: pageNode.value,
     states: new Set(pageNode.states as State[]),
     bounds: pageNode.bounds,
